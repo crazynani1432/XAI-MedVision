@@ -1,0 +1,44 @@
+name: Sync Repositories & Trigger Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync to Target Repository
+        env:
+          GH_PAT: ${{ secrets.SYNC_PAT }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Detect which repository triggered the workflow
+          CURRENT_REPO="${{ github.repository }}"
+          echo "Triggered from: $CURRENT_REPO"
+
+          if [ "$CURRENT_REPO" = "crazynani1432/XAI-MedVision" ]; then
+            TARGET_REPO="https://${GH_PAT}@github.com/pillisaimedhas-dev/XAI-MedVision.git"
+          else
+            TARGET_REPO="https://${GH_PAT}@github.com/crazynani1432/XAI-MedVision.git"
+          fi
+
+          echo "Syncing to target repository..."
+          git push $TARGET_REPO main:main --force || echo "Target repo up to date."
+
+      - name: Trigger Continuous Deployment (Optional Webhook)
+        if: env.DEPLOY_HOOK != ''
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          echo "Triggering automated deployment..."
+          curl -X POST "$DEPLOY_HOOK"
