@@ -2,7 +2,8 @@ FROM python:3.10-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000
+    PORT=7860 \
+    HOME=/tmp
 
 WORKDIR /app
 
@@ -20,6 +21,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY . .
 
-EXPOSE 8000
+# Grant write permissions for temporary files and model downloads
+RUN chmod -R 777 /app /tmp
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+EXPOSE 7860
+
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

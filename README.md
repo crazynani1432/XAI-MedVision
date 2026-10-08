@@ -1,3 +1,15 @@
+---
+title: XAI MedVision 🩺 Explainable AI Diagnostics
+emoji: 🩺
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Multi-modal Explainable AI Medical Vision & Clinical NLP Platform
+---
+
 # XAI-MedVision 🩺 Dynamic Explainable AI Medical Diagnostics Platform
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -75,8 +87,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-*(If `requirements.txt` is missing, install `torch torchvision fastapi uvicorn pillow numpy opencv-python transformers peft`)*
-
 ### 4. Running the Web Application
 Launch the FastAPI application server:
 ```bash
@@ -85,45 +95,6 @@ uvicorn app.main:app --reload --port 8000
 Open your browser and navigate to:
 - **Web UI**: `http://localhost:8000/`
 - **Swagger API Documentation**: `http://localhost:8000/docs`
-
----
-
-## 🧪 Training Models
-
-You can run individual training pipelines to train or fine-tune models from scratch:
-
-```bash
-# Train Chest X-Ray Model
-python train_chest_xray.py
-
-# Train Blood Cell CBC Model
-python train_blood_cells.py
-
-# Train Brain MRI Tumor Model
-python train_brain_mri.py
-
-# Train Bone Fracture Model
-python train_bone_fracture.py
-
-# Fine-tune FLAN-T5 LoRA NLP Model
-python train_mimic_nlp.py
-```
-
----
-
-## 🤝 Collaborative Setup for Git Remotes
-
-If maintaining dual remotes for both developer profiles ([@crazynani1432](https://github.com/crazynani1432) & [@pillisaimedhas-dev](https://github.com/pillisaimedhas-dev)):
-
-```bash
-# Configure remotes
-git remote add origin https://github.com/crazynani1432/XAI-MedVision.git
-git remote add secondary https://github.com/pillisaimedhas-dev/XAI-MedVision.git
-
-# Push to both repositories simultaneously
-git push origin main
-git push secondary main
-```
 
 ---
 
