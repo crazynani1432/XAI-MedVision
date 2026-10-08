@@ -1,0 +1,36 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Models and Checkpoints (Heavy binary weights)
+models_checkpoints/*.pth
+models_checkpoints/*.pt
+models_checkpoints/*.safetensors
+models_checkpoints/*.bin
+models_checkpoints/**/checkpoint-*/
+models_checkpoints/**/optimizer.pt
+models_checkpoints/**/rng_state.pth
+models_checkpoints/**/scheduler.pt
+
+# Large dataset files (optional cache / large raw files)
+data/*.zip
+data/*.tar.gz
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
