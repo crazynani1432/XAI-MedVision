@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  xai-medvision:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xai-medvision-app
+    restart: always
+    ports:
+      - "7860:7860"
+    environment:
+      - PORT=7860
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./models_checkpoints:/app/models_checkpoints
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

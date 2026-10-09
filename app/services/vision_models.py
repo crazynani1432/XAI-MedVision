@@ -2,12 +2,22 @@ import io
 import base64
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision import models, transforms
 from PIL import Image
 import numpy as np
-from pytorch_grad_cam import GradCAM
-from pytorch_grad_cam.utils.image import show_cam_on_image
-from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+import cv2
+
+# Try loading pytorch_grad_cam; if system policy blocks sklearn DLLs, use PyTorch native GradCAM
+_USE_PYTORCH_GRAD_CAM = False
+try:
+    from pytorch_grad_cam import GradCAM
+    from pytorch_grad_cam.utils.image import show_cam_on_image
+    from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+    _USE_PYTORCH_GRAD_CAM = True
+    print("[GradCAM] Using pytorch_grad_cam package.")
+except Exception as e:
+    print(f"[GradCAM Warning] Falling back to PyTorch Native GradCAM: {e}")
 
 _chest_model = None
 _blood_model = None
@@ -20,6 +30,55 @@ def get_device():
     if _device is None:
         _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return _device
+
+def overlay_heatmap_on_image(rgb_img, grayscale_cam):
+    """Blends a grayscale CAM heatmap (0..1) with an RGB image (0..1) using Jet colormap."""
+    heatmap = cv2.applyColorMap(np.uint8(255 * grayscale_cam), cv2.COLORMAP_JET)
+    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB) / 255.0
+    cam_img = 0.5 * heatmap + 0.5 * rgb_img
+    cam_img = cam_img / np.max(cam_img)
+    return np.uint8(255 * cam_img)
+
+def compute_native_gradcam(model, target_layer, input_tensor, pred_idx):
+    """Computes Grad-CAM using native PyTorch hooks and tensor operations."""
+    features = []
+    gradients = []
+
+    def forward_hook(module, input, output):
+        features.append(output)
+
+    def backward_hook(module, grad_in, grad_out):
+        gradients.append(grad_out[0])
+
+    h1 = target_layer.register_forward_hook(forward_hook)
+    h2 = target_layer.register_full_backward_hook(backward_hook)
+
+    model.zero_grad()
+    outputs = model(input_tensor)
+    score = outputs[0, pred_idx]
+    score.backward(retain_graph=True)
+
+    h1.remove()
+    h2.remove()
+
+    if not features or not gradients:
+        return np.zeros((224, 224), dtype=np.float32)
+
+    feat = features[0].detach()
+    grad = gradients[0].detach()
+
+    weights = torch.mean(grad, dim=(2, 3), keepdim=True)
+    cam = torch.sum(weights * feat, dim=1, keepdim=True)
+    cam = F.relu(cam)
+    cam = F.interpolate(cam, size=(224, 224), mode='bilinear', align_corners=False)
+    cam = cam.squeeze().cpu().numpy()
+
+    if cam.max() > cam.min():
+        cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
+    else:
+        cam = np.zeros_like(cam)
+
+    return cam
 
 # ----------------------------------------------------
 # 1. Chest X-Ray Pneumonia Model
@@ -63,12 +122,19 @@ def predict_chest_xray(image_bytes, model_path="models_checkpoints/chest_xray_de
     classes = ['NORMAL', 'PNEUMONIA']
     label = classes[pred_idx] if pred_idx < len(classes) else str(pred_idx)
 
-    target_layers = [model.features.denseblock4]
-    cam = GradCAM(model=model, target_layers=target_layers)
-    targets = [ClassifierOutputTarget(pred_idx)]
-
-    grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
-    visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+    target_layer = model.features.denseblock4
+    if _USE_PYTORCH_GRAD_CAM:
+        try:
+            cam = GradCAM(model=model, target_layers=[target_layer])
+            targets = [ClassifierOutputTarget(pred_idx)]
+            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
+            visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+        except Exception:
+            grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+            visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
+    else:
+        grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+        visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
 
     buffered = io.BytesIO()
     Image.fromarray(visualization).save(buffered, format="PNG")
@@ -124,12 +190,19 @@ def predict_blood_cell(image_bytes, model_path="models_checkpoints/blood_cell_mo
     classes = ['EOSINOPHIL', 'LYMPHOCYTE', 'MONOCYTE', 'NEUTROPHIL']
     label = classes[pred_idx] if pred_idx < len(classes) else str(pred_idx)
 
-    target_layers = [model.features[-1]]
-    cam = GradCAM(model=model, target_layers=target_layers)
-    targets = [ClassifierOutputTarget(pred_idx)]
-
-    grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
-    visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+    target_layer = model.features[-1]
+    if _USE_PYTORCH_GRAD_CAM:
+        try:
+            cam = GradCAM(model=model, target_layers=[target_layer])
+            targets = [ClassifierOutputTarget(pred_idx)]
+            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
+            visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+        except Exception:
+            grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+            visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
+    else:
+        grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+        visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
 
     buffered = io.BytesIO()
     Image.fromarray(visualization).save(buffered, format="PNG")
@@ -184,12 +257,19 @@ def predict_brain_mri(image_bytes, model_path="models_checkpoints/brain_mri_effi
     classes = ['glioma', 'meningioma', 'notumor', 'pituitary']
     label = classes[pred_idx] if pred_idx < len(classes) else str(pred_idx)
 
-    target_layers = [model.features[-1]]
-    cam = GradCAM(model=model, target_layers=target_layers)
-    targets = [ClassifierOutputTarget(pred_idx)]
-
-    grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
-    visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+    target_layer = model.features[-1]
+    if _USE_PYTORCH_GRAD_CAM:
+        try:
+            cam = GradCAM(model=model, target_layers=[target_layer])
+            targets = [ClassifierOutputTarget(pred_idx)]
+            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
+            visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+        except Exception:
+            grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+            visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
+    else:
+        grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+        visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
 
     buffered = io.BytesIO()
     Image.fromarray(visualization).save(buffered, format="PNG")
@@ -249,12 +329,19 @@ def predict_bone_fracture(image_bytes, model_path="models_checkpoints/bone_fract
     classes = ['fractured', 'not fractured']
     label = classes[pred_idx] if pred_idx < len(classes) else str(pred_idx)
 
-    target_layers = [model.layer4[-1]]
-    cam = GradCAM(model=model, target_layers=target_layers)
-    targets = [ClassifierOutputTarget(pred_idx)]
-
-    grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
-    visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+    target_layer = model.layer4[-1]
+    if _USE_PYTORCH_GRAD_CAM:
+        try:
+            cam = GradCAM(model=model, target_layers=[target_layer])
+            targets = [ClassifierOutputTarget(pred_idx)]
+            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
+            visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
+        except Exception:
+            grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+            visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
+    else:
+        grayscale_cam = compute_native_gradcam(model, target_layer, input_tensor, pred_idx)
+        visualization = overlay_heatmap_on_image(rgb_img, grayscale_cam)
 
     buffered = io.BytesIO()
     Image.fromarray(visualization).save(buffered, format="PNG")
