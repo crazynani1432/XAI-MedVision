@@ -1072,89 +1072,110 @@
                 'bone': 'Executing ResNet-50 Bone Fracture X-Ray Analysis...'
             };
 
-            loaderText.textContent = modelTextMap[currentModality] || 'Executing XAI Diagnostic Analysis...';
-
             const apiUrl = getApiBaseUrl();
-            const formData = new FormData();
-            formData.append('file', selectedFile);
+            const endpoint = endpointMap[currentModality] || '/api/predict/chest-xray';
 
-            try {
-                const endpoint = endpointMap[currentModality] || '/api/predict/chest-xray';
-                const response = await fetch(`${apiUrl}${endpoint}`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                loader.style.display = 'none';
-                analyzeBtn.disabled = false;
-
-                if (response.ok && data.success) {
-                    results.style.display = 'flex';
-                    
-                    const label = data.prediction.label;
-                    const confidence = data.prediction.confidence;
-                    const riskLevel = data.prediction.risk_level;
-                    const recommendation = data.prediction.recommendation;
-
-                    document.getElementById('modality-title-tag').textContent = `${data.modality} Diagnostic`;
-                    document.getElementById('badge-text').textContent = label.toUpperCase();
-
-                    const isPathological = (riskLevel === 'HIGH' || label.toUpperCase() === 'PNEUMONIA' || label.toLowerCase() === 'fractured' || (label.toLowerCase() !== 'notumor' && currentModality === 'brain'));
-                    
-                    const diagBadge = document.getElementById('diag-badge');
-                    const badgeIcon = document.getElementById('badge-icon');
-
-                    if (isPathological) {
-                        diagBadge.className = 'diag-badge pathological';
-                        badgeIcon.className = 'fa-solid fa-triangle-exclamation';
+            let attempt = 0;
+            const maxAttempts = 6;
+            
+            while (attempt < maxAttempts) {
+                attempt++;
+                try {
+                    if (attempt === 1) {
+                        loaderText.textContent = modelTextMap[currentModality] || 'Executing XAI Diagnostic Analysis...';
                     } else {
-                        diagBadge.className = 'diag-badge normal';
-                        badgeIcon.className = 'fa-solid fa-circle-check';
+                        loaderText.textContent = `Server initializing (Attempt ${attempt}/${maxAttempts})... Computing activations...`;
                     }
 
-                    document.getElementById('confidence-val').textContent = `${confidence}%`;
-                    document.getElementById('confidence-fill').style.width = `${confidence}%`;
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
 
-                    document.getElementById('gradcam-img').src = `data:image/png;base64,${data.xai.gradcam_base64}`;
-                    document.getElementById('layer-tag').textContent = data.xai.method;
-                    document.getElementById('clinical-text').textContent = recommendation;
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-                    // Multi-class probabilities if available
-                    const probSection = document.getElementById('prob-section');
-                    const probBarsContainer = document.getElementById('prob-bars-container');
-                    
-                    if (data.prediction.class_probabilities) {
-                        probSection.style.display = 'flex';
-                        probBarsContainer.innerHTML = '';
+                    const response = await fetch(`${apiUrl}${endpoint}`, {
+                        method: 'POST',
+                        body: formData,
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        loader.style.display = 'none';
+                        analyzeBtn.disabled = false;
+                        results.style.display = 'flex';
                         
-                        Object.entries(data.prediction.class_probabilities).forEach(([cls, pct]) => {
-                            const row = document.createElement('div');
-                            row.className = 'prob-bar-row';
-                            row.innerHTML = `
-                                <div class="prob-label">${cls}</div>
-                                <div class="prob-track"><div class="prob-bar" style="width: ${pct}%;"></div></div>
-                                <div class="prob-pct">${pct}%</div>
-                            `;
-                            probBarsContainer.appendChild(row);
-                        });
+                        const label = data.prediction.label;
+                        const confidence = data.prediction.confidence;
+                        const riskLevel = data.prediction.risk_level;
+                        const recommendation = data.prediction.recommendation;
+
+                        document.getElementById('modality-title-tag').textContent = `${data.modality} Diagnostic`;
+                        document.getElementById('badge-text').textContent = label.toUpperCase();
+
+                        const isPathological = (riskLevel === 'HIGH' || label.toUpperCase() === 'PNEUMONIA' || label.toLowerCase() === 'fractured' || (label.toLowerCase() !== 'notumor' && currentModality === 'brain'));
+                        
+                        const diagBadge = document.getElementById('diag-badge');
+                        const badgeIcon = document.getElementById('badge-icon');
+
+                        if (isPathological) {
+                            diagBadge.className = 'diag-badge pathological';
+                            badgeIcon.className = 'fa-solid fa-triangle-exclamation';
+                        } else {
+                            diagBadge.className = 'diag-badge normal';
+                            badgeIcon.className = 'fa-solid fa-circle-check';
+                        }
+
+                        document.getElementById('confidence-val').textContent = `${confidence}%`;
+                        document.getElementById('confidence-fill').style.width = `${confidence}%`;
+
+                        document.getElementById('gradcam-img').src = `data:image/png;base64,${data.xai.gradcam_base64}`;
+                        document.getElementById('layer-tag').textContent = data.xai.method;
+                        document.getElementById('clinical-text').textContent = recommendation;
+
+                        // Multi-class probabilities if available
+                        const probSection = document.getElementById('prob-section');
+                        const probBarsContainer = document.getElementById('prob-bars-container');
+                        
+                        if (data.prediction.class_probabilities) {
+                            probSection.style.display = 'flex';
+                            probBarsContainer.innerHTML = '';
+                            
+                            Object.entries(data.prediction.class_probabilities).forEach(([cls, pct]) => {
+                                const row = document.createElement('div');
+                                row.className = 'prob-bar-row';
+                                row.innerHTML = `
+                                    <div class="prob-label">${cls}</div>
+                                    <div class="prob-track"><div class="prob-bar" style="width: ${pct}%;"></div></div>
+                                    <div class="prob-pct">${pct}%</div>
+                                `;
+                                probBarsContainer.appendChild(row);
+                            });
+                        } else {
+                            probSection.style.display = 'none';
+                        }
+
+                        // Reset heatmap slider to 100%
+                        document.getElementById('heatmap-slider').value = 100;
+                        adjustHeatmapOpacity(100);
+                        return;
                     } else {
-                        probSection.style.display = 'none';
+                        throw new Error(data.detail || "Diagnostic error");
                     }
-
-                    // Reset heatmap slider to 100%
-                    document.getElementById('heatmap-slider').value = 100;
-                    adjustHeatmapOpacity(100);
-
-                } else {
-                    alert("Diagnostic processing error: " + (data.detail || "Server error"));
-                    placeholder.style.display = 'flex';
+                } catch (err) {
+                    console.warn(`Analysis attempt ${attempt} failed:`, err);
+                    if (attempt < maxAttempts) {
+                        loaderText.textContent = `Server waking up... Retrying automatically (${attempt}/${maxAttempts})...`;
+                        await new Promise(r => setTimeout(r, 3000));
+                    } else {
+                        loader.style.display = 'none';
+                        analyzeBtn.disabled = false;
+                        placeholder.style.display = 'flex';
+                        alert("Backend connection timed out. Please ensure the server is online and try again.");
+                    }
                 }
-            } catch (err) {
-                loader.style.display = 'none';
-                analyzeBtn.disabled = false;
-                alert("API Connection Error: Backend server is waking up or unreachable. Please retry in 15 seconds.");
-                placeholder.style.display = 'flex';
             }
         }
     </script>
