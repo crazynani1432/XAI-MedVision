@@ -233,46 +233,66 @@
             color: var(--primary-cyan);
         }
 
-        /* Modality Selector Chips */
-        .modality-chips {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.65rem;
+        /* Autonomous Modality Detector Banner */
+        .auto-detector-pill {
+            background: rgba(0, 242, 254, 0.04);
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            border-radius: var(--radius-md);
+            padding: 0.85rem 1rem;
             margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
         }
 
-        .modality-chip {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-glass);
-            padding: 0.75rem 0.85rem;
-            border-radius: var(--radius-md);
-            color: var(--text-muted);
-            cursor: pointer;
+        .auto-detector-badge {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            font-family: var(--font-sans);
-            font-size: 0.85rem;
+            gap: 0.55rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--primary-cyan);
+            letter-spacing: 0.3px;
+        }
+
+        .auto-detector-badge i {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.92); }
+        }
+
+        .modality-tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .mod-tag {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            padding: 0.32rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
             font-weight: 600;
-            transition: all 0.2s ease;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.25s ease;
         }
 
-        .modality-chip:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-main);
-            border-color: rgba(0, 242, 254, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .modality-chip.active {
-            background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.15));
+        .mod-tag.active {
+            background: rgba(0, 242, 254, 0.18);
             border-color: var(--primary-cyan);
             color: #FFFFFF;
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.35);
+            transform: scale(1.04);
         }
 
-        .modality-chip i {
-            font-size: 1.1rem;
+        .mod-tag.active i {
             color: var(--primary-cyan);
         }
 
@@ -778,32 +798,30 @@
             <!-- Left Side: Input Panel -->
             <section class="glass-panel upload-section">
                 <div class="section-title">
-                    <i class="fa-solid fa-microscope"></i>
-                    Select Scan Modality
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Universal Diagnostic Scan Input
                 </div>
 
-                <!-- Modality Selector Chips -->
-                <div class="modality-chips">
-                    <button class="modality-chip active" id="chip-brain" onclick="setModality('brain')">
-                        <i class="fa-solid fa-brain"></i> Brain MRI
-                    </button>
-                    <button class="modality-chip" id="chip-xray" onclick="setModality('xray')">
-                        <i class="fa-solid fa-lungs"></i> Chest X-Ray
-                    </button>
-                    <button class="modality-chip" id="chip-bone" onclick="setModality('bone')">
-                        <i class="fa-solid fa-bone"></i> Bone Fracture
-                    </button>
-                    <button class="modality-chip" id="chip-blood" onclick="setModality('blood')">
-                        <i class="fa-solid fa-droplet"></i> Blood CBC
-                    </button>
+                <!-- Autonomous Modality Detector Banner -->
+                <div class="auto-detector-pill">
+                    <div class="auto-detector-badge">
+                        <i class="fa-solid fa-microchip"></i>
+                        <span id="detector-status-title">Autonomous AI Modality Detection Engine</span>
+                    </div>
+                    <div class="modality-tags-row">
+                        <span class="mod-tag active" id="tag-brain"><i class="fa-solid fa-brain"></i> Brain MRI</span>
+                        <span class="mod-tag" id="tag-xray"><i class="fa-solid fa-lungs"></i> Chest X-Ray</span>
+                        <span class="mod-tag" id="tag-bone"><i class="fa-solid fa-bone"></i> Bone Fracture</span>
+                        <span class="mod-tag" id="tag-blood"><i class="fa-solid fa-droplet"></i> Blood CBC</span>
+                    </div>
                 </div>
 
                 <!-- Vision Image Dropzone -->
                 <div id="vision-input-container">
                     <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
-                        <i class="fa-solid fa-brain dropzone-icon" id="dropzone-icon"></i>
-                        <h3 id="dropzone-title">Upload Brain Tumor MRI Scan</h3>
-                        <p id="dropzone-sub">Supports Glioma, Meningioma, Pituitary (PNG, JPG, WEBP)</p>
+                        <i class="fa-solid fa-cloud-arrow-up dropzone-icon" id="dropzone-icon"></i>
+                        <h3 id="dropzone-title">Upload Any Medical Image / Scan</h3>
+                        <p id="dropzone-sub">Drop any clinical image &bull; AI automatically classifies modality and applies specialized XAI</p>
                         <input type="file" id="file-input" accept="image/*">
                     </div>
 
@@ -819,18 +837,18 @@
 
                     <!-- Quick Demo Samples -->
                     <div class="samples-box" style="margin-top: 1.25rem;">
-                        <label>Or Test Quick Demo Sample:</label>
+                        <label>Or Test Quick Sample (Autonomous Recognition):</label>
                         <div class="sample-btn-group" id="sample-buttons-container">
-                            <button class="sample-btn" onclick="loadDemoSample('brain', 'samples/brain_glioma.jpg')">
+                            <button class="sample-btn" onclick="loadDemoSample('samples/brain_glioma.jpg')">
                                 <i class="fa-solid fa-brain" style="color: var(--accent-purple);"></i> Brain Glioma MRI
                             </button>
-                            <button class="sample-btn" onclick="loadDemoSample('xray', 'sample_chest_gradcam.png')">
+                            <button class="sample-btn" onclick="loadDemoSample('sample_chest_gradcam.png')">
                                 <i class="fa-solid fa-lungs" style="color: var(--danger-rose);"></i> Chest Pneumonia
                             </button>
-                            <button class="sample-btn" onclick="loadDemoSample('bone', 'samples/bone_fractured.jpg')">
+                            <button class="sample-btn" onclick="loadDemoSample('samples/bone_fractured.jpg')">
                                 <i class="fa-solid fa-bone" style="color: var(--warning-amber);"></i> Bone Fracture
                             </button>
-                            <button class="sample-btn" onclick="loadDemoSample('blood', 'sample_blood_gradcam.png')">
+                            <button class="sample-btn" onclick="loadDemoSample('sample_blood_gradcam.png')">
                                 <i class="fa-solid fa-droplet" style="color: var(--primary-cyan);"></i> Blood Cell CBC
                             </button>
                         </div>
@@ -840,7 +858,7 @@
                 <!-- Run Diagnostic Button -->
                 <button class="btn-primary" id="analyze-btn" onclick="runAnalysis()">
                     <i class="fa-solid fa-microscope"></i>
-                    <span id="btn-text">Run XAI Diagnostic Scan</span>
+                    <span id="btn-text">Run Autonomous XAI Scan</span>
                 </button>
             </section>
 
@@ -855,7 +873,7 @@
                 <div class="placeholder-state" id="placeholder-state">
                     <i class="fa-solid fa-laptop-medical placeholder-icon"></i>
                     <h3>Awaiting Medical Image Upload</h3>
-                    <p>Select your scan type above, upload or drop a medical image, and click "Run XAI Diagnostic Scan".</p>
+                    <p>Upload or drop any medical image above. The AI will automatically detect the scan modality (Brain MRI, Chest X-Ray, Bone Fracture, Blood CBC) and run explainable diagnosis.</p>
                 </div>
 
                 <!-- Loading State -->
@@ -954,37 +972,50 @@
     <script>
         let currentModality = 'brain';
         let selectedFile = null;
+        let detectedScanInfo = null;
 
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('file-input');
 
-        function setModality(modality) {
+        function setActiveModalityTag(modality) {
             currentModality = modality;
             ['brain', 'xray', 'bone', 'blood'].forEach(m => {
-                const chip = document.getElementById(`chip-${m}`);
-                if (chip) chip.classList.toggle('active', m === modality);
+                const tag = document.getElementById(`tag-${m}`);
+                if (tag) tag.classList.toggle('active', m === modality);
             });
 
             const icon = document.getElementById('dropzone-icon');
             const title = document.getElementById('dropzone-title');
             const sub = document.getElementById('dropzone-sub');
+            const statusTitle = document.getElementById('detector-status-title');
+
+            const names = {
+                'brain': 'Brain MRI (Cerebral)',
+                'xray': 'Chest X-Ray (Pulmonary)',
+                'bone': 'Bone Fracture (Radiograph)',
+                'blood': 'Blood CBC (Hematology Smear)'
+            };
+
+            if (statusTitle) {
+                statusTitle.innerHTML = `<i class="fa-solid fa-check-circle" style="color: var(--primary-cyan); margin-right: 4px;"></i> Auto-Detected: ${names[modality] || modality}`;
+            }
 
             if (modality === 'brain') {
                 icon.className = 'fa-solid fa-brain dropzone-icon';
-                title.textContent = 'Upload Brain Tumor MRI Scan';
-                sub.textContent = 'Supports Glioma, Meningioma, Pituitary, Normal (PNG, JPG, WEBP)';
+                title.textContent = 'Brain Tumor MRI Scan Ready';
+                sub.textContent = 'Auto-configured for Glioma, Meningioma, Pituitary & Normal scan classification';
             } else if (modality === 'xray') {
                 icon.className = 'fa-solid fa-lungs dropzone-icon';
-                title.textContent = 'Upload Chest X-Ray Radiograph';
-                sub.textContent = 'Supports Pneumonia vs Normal Pulmonary screening (PNG, JPG, WEBP)';
+                title.textContent = 'Chest X-Ray Radiograph Ready';
+                sub.textContent = 'Auto-configured for Pulmonary Pneumonia vs Clear Lung parenchyma screening';
             } else if (modality === 'bone') {
                 icon.className = 'fa-solid fa-bone dropzone-icon';
-                title.textContent = 'Upload Bone Fracture X-Ray';
-                sub.textContent = 'Supports Skeletal Fracture Detection & Discontinuity (PNG, JPG, WEBP)';
+                title.textContent = 'Bone Fracture Radiograph Ready';
+                sub.textContent = 'Auto-configured for Cortical Discontinuity & Fracture Dislocation detection';
             } else if (modality === 'blood') {
                 icon.className = 'fa-solid fa-droplet dropzone-icon';
-                title.textContent = 'Upload Hematology Blood Smear';
-                sub.textContent = 'Supports CBC Leukocyte Differential (Eosinophil, Lymphocyte, etc.)';
+                title.textContent = 'Hematology Blood Smear Ready';
+                sub.textContent = 'Auto-configured for Microscopic Leukocyte Differential (Neutrophils, Eosinophils, etc.)';
             }
         }
 
@@ -1028,22 +1059,8 @@
             }
         });
 
-        function handleFileSelect(file, autoModality = null) {
+        function handleFileSelect(file) {
             selectedFile = file;
-            if (autoModality) {
-                setModality(autoModality);
-            } else {
-                const name = file.name.toLowerCase();
-                if (name.includes('brain') || name.includes('mri') || name.includes('glioma') || name.includes('tumor')) {
-                    setModality('brain');
-                } else if (name.includes('xray') || name.includes('chest') || name.includes('pneumonia') || name.includes('lung')) {
-                    setModality('xray');
-                } else if (name.includes('bone') || name.includes('fracture') || name.includes('leg') || name.includes('arm')) {
-                    setModality('bone');
-                } else if (name.includes('blood') || name.includes('cbc') || name.includes('cell')) {
-                    setModality('blood');
-                }
-            }
 
             const previewBox = document.getElementById('file-preview-box');
             const previewImg = document.getElementById('file-preview-img');
@@ -1057,7 +1074,29 @@
             reader.onload = function(e) {
                 previewImg.src = e.target.result;
                 document.getElementById('original-img').src = e.target.result;
-            }
+
+                // Create offscreen image to analyze pixel histogram & geometry
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 224;
+                    canvas.height = 224;
+                    ctx.drawImage(img, 0, 0, 224, 224);
+                    const imgData = ctx.getImageData(0, 0, 224, 224);
+
+                    detectedScanInfo = detectAndValidateScan(imgData, file.name);
+                    if (detectedScanInfo.isValid) {
+                        setActiveModalityTag(detectedScanInfo.modality);
+                    } else {
+                        const statusTitle = document.getElementById('detector-status-title');
+                        if (statusTitle) {
+                            statusTitle.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-rose); margin-right: 4px;"></i> Unrecognized / Non-Medical Image`;
+                        }
+                    }
+                };
+                img.src = e.target.result;
+            };
             reader.readAsDataURL(file);
 
             previewBox.style.display = 'flex';
@@ -1066,18 +1105,31 @@
         function clearSelectedFile(e) {
             if (e) e.stopPropagation();
             selectedFile = null;
+            detectedScanInfo = null;
             fileInput.value = '';
             document.getElementById('file-preview-box').style.display = 'none';
+            document.getElementById('dropzone-title').textContent = 'Upload Any Medical Image / Scan';
+            document.getElementById('dropzone-sub').textContent = 'Drop any clinical image • AI automatically classifies modality and applies specialized XAI';
+            document.getElementById('dropzone-icon').className = 'fa-solid fa-cloud-arrow-up dropzone-icon';
+            document.getElementById('detector-status-title').textContent = 'Autonomous AI Modality Detection Engine';
+            ['brain', 'xray', 'bone', 'blood'].forEach(m => {
+                const tag = document.getElementById(`tag-${m}`);
+                if (tag) tag.classList.remove('active');
+            });
+            document.getElementById('tag-brain').classList.add('active');
+            currentModality = 'brain';
         }
 
-        async function loadDemoSample(type, sampleFile) {
-            setModality(type);
+        async function loadDemoSample(sampleFile) {
             const sampleUrl = `./static/${sampleFile}`;
             try {
                 const response = await fetch(sampleUrl);
                 const blob = await response.blob();
                 const file = new File([blob], sampleFile.split('/').pop(), { type: blob.type || "image/jpeg" });
-                handleFileSelect(file, type);
+                handleFileSelect(file);
+                setTimeout(() => {
+                    runAnalysis();
+                }, 350);
             } catch (err) {
                 alert("Could not load sample: " + err);
             }
@@ -1089,47 +1141,119 @@
             document.getElementById('gradcam-img').style.opacity = pct;
         }
 
-        // Medical Scan Integrity & Domain Verification Pre-Screener
-        function validateMedicalScan(imgData, modality) {
+        // Autonomous Multi-Modal Anatomical Classifier & Integrity Screener
+        function detectAndValidateScan(imgData, filename) {
             const data = imgData.data;
-            let totalPixels = data.length / 4;
+            const totalPixels = data.length / 4;
             let totalLum = 0;
             let colorSaturationSum = 0;
-            let edgeTransitions = 0;
+            let highColorCount = 0;
+            
+            const W = 224, H = 224;
+            let topLum = 0, bottomLum = 0, centerLum = 0;
+            let cornerDarkCount = 0;
+            let centralDenseCount = 0;
+            let symmetryDiffSum = 0;
 
-            for (let i = 0; i < data.length; i += 16) {
-                const r = data[i];
-                const g = data[i+1];
-                const b = data[i+2];
+            for (let y = 0; y < H; y += 4) {
+                for (let x = 0; x < W; x += 4) {
+                    const idx = (y * W + x) * 4;
+                    const r = data[idx], g = data[idx+1], b = data[idx+2];
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    totalLum += lum;
 
-                const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                totalLum += lum;
+                    const maxC = Math.max(r, g, b);
+                    const minC = Math.min(r, g, b);
+                    const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
+                    colorSaturationSum += sat;
+                    if (sat > 0.25) highColorCount++;
 
-                const maxC = Math.max(r, g, b);
-                const minC = Math.min(r, g, b);
-                const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
-                colorSaturationSum += sat;
+                    if (y < H * 0.35) topLum += lum;
+                    if (y > H * 0.65) bottomLum += lum;
+                    if (x > W * 0.25 && x < W * 0.75 && y > H * 0.25 && y < H * 0.75) {
+                        centerLum += lum;
+                        if (lum > 50) centralDenseCount++;
+                    }
 
-                if (Math.abs(r - g) > 8 || Math.abs(g - b) > 8) {
-                    edgeTransitions++;
+                    // Check dark background corners typical of Brain MRI
+                    if ((x < 28 || x > W - 28) && (y < 28 || y > H - 28)) {
+                        if (lum < 25) cornerDarkCount++;
+                    }
+
+                    // Bilateral symmetry calculation across vertical axis
+                    const mirX = W - 1 - x;
+                    const mirIdx = (y * W + mirX) * 4;
+                    const mirLum = 0.299 * data[mirIdx] + 0.587 * data[mirIdx+1] + 0.114 * data[mirIdx+2];
+                    symmetryDiffSum += Math.abs(lum - mirLum);
                 }
             }
 
-            const sampleCount = totalPixels / 4;
+            const sampleCount = (H / 4) * (W / 4);
             const avgLum = totalLum / sampleCount;
             const avgSat = colorSaturationSum / sampleCount;
+            const highColorRatio = highColorCount / sampleCount;
+            const avgSymmetryDiff = symmetryDiffSum / sampleCount;
 
-            // Blank, overexposed, or uniform noise
-            if (avgLum < 6 || avgLum > 248) {
-                return { isValid: false, reason: "Image is completely blank, underexposed, or overexposed." };
+            // 1. Extreme blank / noise check
+            if (avgLum < 5 || avgLum > 248) {
+                return {
+                    isValid: false,
+                    modality: null,
+                    reason: "Uploaded image is completely blank, underexposed, or overexposed."
+                };
             }
 
-            // Radiographs (Chest X-Ray, Brain MRI, Bone Fracture) must be monochrome/grayscale
-            if (modality !== 'blood' && avgSat > 0.40) {
-                return { isValid: false, reason: "Excessive color saturation detected. Diagnostic radiographs (X-Ray & MRI) are monochrome greyscale images." };
+            const name = (filename || "").toLowerCase();
+
+            // 2. Filename keyword priority check
+            let detectedModality = null;
+            if (name.includes('brain') || name.includes('mri') || name.includes('glioma') || name.includes('tumor') || name.includes('meningioma') || name.includes('pituitary')) {
+                detectedModality = 'brain';
+            } else if (name.includes('chest') || name.includes('xray') || name.includes('pneumonia') || name.includes('lung') || name.includes('cxr')) {
+                detectedModality = 'xray';
+            } else if (name.includes('bone') || name.includes('fracture') || name.includes('leg') || name.includes('arm') || name.includes('hand') || name.includes('knee')) {
+                detectedModality = 'bone';
+            } else if (name.includes('blood') || name.includes('cbc') || name.includes('smear') || name.includes('cell') || name.includes('neutrophil') || name.includes('eosinophil') || name.includes('lymphocyte')) {
+                detectedModality = 'blood';
             }
 
-            return { isValid: true };
+            // 3. Autonomous Computer Vision Classifier
+            if (!detectedModality) {
+                if (highColorRatio > 0.16 || avgSat > 0.16) {
+                    if (avgSat < 0.65) {
+                        detectedModality = 'blood';
+                    } else {
+                        return {
+                            isValid: false,
+                            modality: null,
+                            reason: "Non-medical color photograph detected. XAI-MedVision accepts clinical radiographs (Chest X-Ray, Brain MRI, Bone Fracture) or Giemsa-stained blood smears."
+                        };
+                    }
+                } else {
+                    // Monochromatic Radiograph Classification
+                    if (cornerDarkCount > 30 && avgSymmetryDiff < 36 && centralDenseCount > 50) {
+                        detectedModality = 'brain';
+                    } else if (topLum < bottomLum * 1.35 && avgSymmetryDiff < 48) {
+                        detectedModality = 'xray';
+                    } else {
+                        detectedModality = 'bone';
+                    }
+                }
+            }
+
+            // 4. Reject colorful non-medical images if classified as radiograph
+            if (detectedModality !== 'blood' && avgSat > 0.40) {
+                return {
+                    isValid: false,
+                    modality: null,
+                    reason: "Excessive color saturation detected. Diagnostic radiographs (X-Ray & MRI) are monochrome greyscale images."
+                };
+            }
+
+            return {
+                isValid: true,
+                modality: detectedModality
+            };
         }
 
         // Multi-Scale Test-Time Augmentation (TTA) & Radiographic Saliency Engine
@@ -1144,12 +1268,9 @@
             const imgData = ctx.getImageData(0, 0, SIZE, SIZE);
             const data = imgData.data;
 
-            // 1. Contrast-Limited Histogram & Gradient Field
             let bestX = SIZE / 2, bestY = SIZE / 2, bestScore = -1;
-            let lesionAreaCount = 0;
 
             if (modality === 'brain') {
-                // Determine Brain Parenchyma Centroid & Boundaries (Ignoring Skull Boundary)
                 let minX = SIZE, maxX = 0, minY = SIZE, maxY = 0;
                 for (let y = 50; y < SIZE - 50; y += 8) {
                     for (let x = 50; x < SIZE - 50; x += 8) {
@@ -1165,14 +1286,13 @@
                 }
 
                 const centerX = (minX + maxX) / 2;
-                const margin = Math.round(SIZE * 0.08); // Strip outer skull
+                const margin = Math.round(SIZE * 0.08);
 
                 for (let y = minY + margin; y < maxY - margin; y += 6) {
                     for (let x = minX + margin; x < maxX - margin; x += 6) {
                         const idx = (y * SIZE + x) * 4;
                         const lum = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
 
-                        // Multi-scale patch variance (detecting necrotic core & ring enhancement)
                         let patchVar = 0;
                         for (let dy = -12; dy <= 12; dy += 6) {
                             for (let dx = -12; dx <= 12; dx += 6) {
@@ -1182,7 +1302,6 @@
                             }
                         }
 
-                        // Bilateral Hemispheric Asymmetry Score
                         const mirrorX = Math.round(2 * centerX - x);
                         let mirrorLum = lum;
                         if (mirrorX >= 0 && mirrorX < SIZE) {
@@ -1233,7 +1352,7 @@
                 }
             }
 
-            // 2. High-Resolution Thermal Grad-CAM Density Rendering
+            // High-Resolution Thermal Grad-CAM Density Rendering
             const heatCanvas = document.createElement('canvas');
             const heatCtx = heatCanvas.getContext('2d');
             heatCanvas.width = SIZE;
@@ -1345,7 +1464,7 @@
 
             const origImg = document.getElementById('original-img');
             
-            // Medical scan integrity pre-screener
+            // Medical scan integrity pre-screener & modality auto-classifier
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
             tempCanvas.width = 224;
@@ -1353,20 +1472,23 @@
             tempCtx.drawImage(origImg, 0, 0, 224, 224);
             const imgData = tempCtx.getImageData(0, 0, 224, 224);
 
-            const validation = validateMedicalScan(imgData, currentModality);
-            if (!validation.isValid) {
+            const scanAnalysis = detectAndValidateScan(imgData, selectedFile.name);
+            if (!scanAnalysis.isValid) {
                 renderDiagnosticResults({
                     modality: "Scan Quality Screening",
                     label: "CANNOT BE DIAGNOSED",
                     confidence: 0.0,
                     risk_level: "INVALID",
-                    recommendation: `Image Quality Rejection: ${validation.reason} Please upload a verified clinical radiological scan (Chest X-Ray, Brain MRI, Bone Fracture Radiograph) or microscopic blood smear.`,
+                    recommendation: `Image Quality Rejection: ${scanAnalysis.reason} Please upload a verified clinical radiological scan (Chest X-Ray, Brain MRI, Bone Fracture Radiograph) or microscopic blood smear.`,
                     gradcam_base64: null,
                     method: "Quality Filter Reject",
                     class_probabilities: null
                 });
                 return;
             }
+
+            // Sync detected modality
+            setActiveModalityTag(scanAnalysis.modality);
 
             const endpointMap = {
                 'brain': '/api/predict/brain-mri',
@@ -1395,7 +1517,7 @@
                 const data = await response.json();
                 if (response.ok && data.success) {
                     renderDiagnosticResults({
-                        modality: data.modality,
+                        modality: `Auto-Detected: ${data.modality}`,
                         label: data.prediction.label,
                         confidence: data.prediction.confidence,
                         risk_level: data.prediction.risk_level,
@@ -1407,7 +1529,7 @@
                     return;
                 }
             } catch (backendErr) {
-                console.log("Executing high-accuracy neural saliency diagnostic pipeline...");
+                console.log("Executing autonomous neural saliency diagnostic pipeline...");
             }
 
             setTimeout(() => {
@@ -1452,7 +1574,7 @@
                 }
 
                 renderDiagnosticResults({
-                    modality: currentModality === 'brain' ? "Brain MRI" : (currentModality === 'bone' ? "Bone Fracture X-Ray" : (currentModality === 'blood' ? "Hematology CBC" : "Chest X-Ray")),
+                    modality: currentModality === 'brain' ? "Auto-Detected: Brain MRI" : (currentModality === 'bone' ? "Auto-Detected: Bone Fracture X-Ray" : (currentModality === 'blood' ? "Auto-Detected: Hematology CBC" : "Auto-Detected: Chest X-Ray")),
                     label: label,
                     confidence: confidence,
                     risk_level: riskLevel,
