@@ -247,13 +247,15 @@ async def summarize_clinical_note(payload: ClinicalNoteRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Clinical note summarization failed: {str(e)}")
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", summary="Backend API Root")
 async def serve_dashboard():
-    html_file = os.path.join("app", "static", "index.html")
-    if os.path.exists(html_file):
-        with open(html_file, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>XAI-MedVision API Online</h1><p>Visit <a href='/docs'>/docs</a> for API documentation.</p>")
+    return JSONResponse(content={
+        "status": "online",
+        "service": "XAI-MedVision Backend API",
+        "version": "3.0.0",
+        "documentation": "/docs",
+        "health_check": "/api/health"
+    })
 
 if __name__ == "__main__":
     import uvicorn

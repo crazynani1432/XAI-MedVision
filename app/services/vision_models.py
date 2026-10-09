@@ -1,3 +1,4 @@
+import os
 import io
 import base64
 import torch
@@ -87,12 +88,20 @@ def get_chest_model(model_path="models_checkpoints/chest_xray_densenet.pth"):
     global _chest_model
     device = get_device()
     if _chest_model is None:
-        model = models.densenet121(weights=None)
+        model = models.densenet121(weights=models.DenseNet121_Weights.DEFAULT)
         model.classifier = nn.Sequential(
             nn.Dropout(0.2),
             nn.Linear(model.classifier.in_features, 2)
         )
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        if os.path.exists(model_path):
+            try:
+                model.load_state_dict(torch.load(model_path, map_location=device))
+                print(f"[Model Loaded] Successfully restored Chest X-Ray weights from {model_path}")
+            except Exception as e:
+                print(f"[Model Warning] Failed loading {model_path}: {e}")
+        else:
+            print(f"[Model Warning] Checkpoint {model_path} not found. Using pretrained DenseNet-121 weights.")
+            
         model.to(device)
         model.eval()
         _chest_model = model
@@ -153,14 +162,22 @@ def get_blood_model(model_path="models_checkpoints/blood_cell_mobilenet.pth"):
     global _blood_model
     device = get_device()
     if _blood_model is None:
-        model = models.mobilenet_v2(weights=None)
+        model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
         model.classifier[1] = nn.Sequential(
             nn.Linear(1280, 256),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.Linear(256, 4)
         )
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        if os.path.exists(model_path):
+            try:
+                model.load_state_dict(torch.load(model_path, map_location=device))
+                print(f"[Model Loaded] Successfully restored Blood Cell weights from {model_path}")
+            except Exception as e:
+                print(f"[Model Warning] Failed loading {model_path}: {e}")
+        else:
+            print(f"[Model Warning] Checkpoint {model_path} not found. Using pretrained MobileNetV2 weights.")
+
         model.to(device)
         model.eval()
         _blood_model = model
@@ -224,10 +241,18 @@ def get_brain_model(model_path="models_checkpoints/brain_mri_efficientnet.pth"):
     global _brain_model
     device = get_device()
     if _brain_model is None:
-        model = models.efficientnet_b0(weights=None)
+        model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT)
         in_features = model.classifier[1].in_features
         model.classifier[1] = nn.Linear(in_features, 4)
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        if os.path.exists(model_path):
+            try:
+                model.load_state_dict(torch.load(model_path, map_location=device))
+                print(f"[Model Loaded] Successfully restored Brain MRI weights from {model_path}")
+            except Exception as e:
+                print(f"[Model Warning] Failed loading {model_path}: {e}")
+        else:
+            print(f"[Model Warning] Checkpoint {model_path} not found. Using pretrained EfficientNet-B0 weights.")
+
         model.to(device)
         model.eval()
         _brain_model = model
@@ -291,7 +316,7 @@ def get_bone_model(model_path="models_checkpoints/bone_fracture_resnet50.pth"):
     global _bone_model
     device = get_device()
     if _bone_model is None:
-        model = models.resnet50(weights=None)
+        model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
         in_features = model.fc.in_features
         model.fc = nn.Sequential(
             nn.Linear(in_features, 256),
@@ -299,7 +324,15 @@ def get_bone_model(model_path="models_checkpoints/bone_fracture_resnet50.pth"):
             nn.Dropout(0.3),
             nn.Linear(256, 2)
         )
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        if os.path.exists(model_path):
+            try:
+                model.load_state_dict(torch.load(model_path, map_location=device))
+                print(f"[Model Loaded] Successfully restored Bone Fracture weights from {model_path}")
+            except Exception as e:
+                print(f"[Model Warning] Failed loading {model_path}: {e}")
+        else:
+            print(f"[Model Warning] Checkpoint {model_path} not found. Using pretrained ResNet-50 weights.")
+
         model.to(device)
         model.eval()
         _bone_model = model
