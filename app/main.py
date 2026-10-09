@@ -8,10 +8,6 @@ from app.services.vision_models import (
     predict_blood_cell,
     predict_brain_mri,
     predict_bone_fracture,
-    get_chest_model,
-    get_blood_model,
-    get_brain_model,
-    get_bone_model,
 )
 from app.services.nlp_service import summarize_discharge_note
 from pydantic import BaseModel
@@ -35,22 +31,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files directory
-os.makedirs("app/static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
 @app.on_event("startup")
 async def startup_event():
-    # Pre-warm model weights into memory
-    try:
-        print("[Startup] Pre-warming 4 XAI diagnostic models...")
-        get_chest_model()
-        get_blood_model()
-        get_brain_model()
-        get_bone_model()
-        print("[Startup] All 4 XAI models pre-warmed successfully!")
-    except Exception as e:
-        print(f"[Startup Warning] Could not pre-warm all models: {e}")
+    print("[Startup] XAI-MedVision API backend initialized in on-demand lazy-loading mode.")
 
 @app.get("/api/health", summary="Check system health")
 async def health_check():
