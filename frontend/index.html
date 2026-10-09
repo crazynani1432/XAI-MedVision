@@ -4,30 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XAI-MedVision | 4-Modal Clinical AI & Explainable Diagnostic Platform</title>
-    <meta name="description" content="State-of-the-art Explainable AI (XAI) multi-modal medical imaging platform supporting Chest X-Ray, Blood CBC, Brain Tumor MRI, and Bone Fracture X-Ray with PyTorch Grad-CAM heatmaps.">
+    <meta name="description" content="Multi-modal Explainable AI Medical Diagnostic Platform supporting Chest X-Ray, Blood CBC, Brain MRI, Bone Fracture X-Ray, and Clinical Discharge Summarization with PyTorch Grad-CAM heatmaps.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
         :root {
             --bg-dark: #070B12;
-            --bg-card: rgba(16, 24, 40, 0.75);
-            --bg-card-hover: rgba(23, 34, 56, 0.85);
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
             --border-glass: rgba(255, 255, 255, 0.08);
             --border-glow: rgba(0, 242, 254, 0.3);
             
             --primary-cyan: #00F2FE;
             --primary-blue: #4FACFE;
-            --accent-purple: #7F00FF;
+            --accent-purple: #8B5CF6;
             --success-emerald: #10B981;
             --danger-rose: #F43F5E;
             --warning-amber: #F59E0B;
             
-            --text-main: #F1F5F9;
+            --text-main: #F8FAFC;
             --text-muted: #94A3B8;
             --text-dim: #64748B;
             
@@ -48,8 +48,9 @@
         body {
             background-color: var(--bg-dark);
             background-image: 
-                radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.07) 0%, transparent 40%),
-                radial-gradient(circle at 85% 85%, rgba(127, 0, 255, 0.07) 0%, transparent 40%);
+                radial-gradient(circle at 10% 10%, rgba(0, 242, 254, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 60%);
             color: var(--text-main);
             font-family: var(--font-sans);
             min-height: 100vh;
@@ -58,19 +59,23 @@
             overflow-x: hidden;
         }
 
-        /* Glassmorphism utility */
         .glass-panel {
             background: var(--bg-card);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-glass);
             border-radius: var(--radius-lg);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            box-shadow: 0 10px 35px 0 rgba(0, 0, 0, 0.4);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.14);
         }
 
         /* Header Navigation */
         header {
-            padding: 1.25rem 2.5rem;
+            padding: 1.1rem 2.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -90,29 +95,29 @@
         }
 
         .logo-icon {
-            width: 42px;
-            height: 42px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
             display: flex;
             align-items: center;
             justify-content: center;
             color: #070B12;
-            font-size: 1.35rem;
-            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+            font-size: 1.4rem;
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.45);
         }
 
         .brand-text h1 {
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #FFFFFF, var(--primary-cyan));
+            background: linear-gradient(135deg, #FFFFFF 30%, var(--primary-cyan));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
         }
 
         .brand-text p {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
             font-weight: 500;
         }
@@ -120,20 +125,33 @@
         .header-status {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
+            gap: 1rem;
         }
 
         .status-badge {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.4rem 0.85rem;
+            padding: 0.45rem 0.95rem;
             border-radius: 20px;
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.3);
             color: var(--success-emerald);
             font-size: 0.8rem;
             font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: var(--warning-amber);
+        }
+
+        .status-badge.offline {
+            background: rgba(244, 63, 94, 0.1);
+            border-color: rgba(244, 63, 94, 0.3);
+            color: var(--danger-rose);
         }
 
         .pulse-dot {
@@ -145,160 +163,217 @@
             animation: pulse 2s infinite;
         }
 
+        .status-badge.warning .pulse-dot {
+            background-color: var(--warning-amber);
+            box-shadow: 0 0 10px var(--warning-amber);
+        }
+
+        .status-badge.offline .pulse-dot {
+            background-color: var(--danger-rose);
+            box-shadow: 0 0 10px var(--danger-rose);
+        }
+
         @keyframes pulse {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        /* Main Workspace Container */
+        /* Layout */
         main {
             flex: 1;
-            max-width: 1440px;
-            margin: 0 auto;
+            max-width: 1400px;
             width: 100%;
+            margin: 0 auto;
             padding: 2rem 2.5rem;
             display: flex;
             flex-direction: column;
             gap: 2rem;
         }
 
-        /* Hero banner */
+        /* Hero Banner */
         .hero-banner {
+            padding: 2rem 2.5rem;
+            position: relative;
+            overflow: hidden;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.75rem 2rem;
-            background: linear-gradient(135deg, rgba(16, 24, 40, 0.9), rgba(12, 18, 30, 0.9));
-            border-left: 4px solid var(--primary-cyan);
+            flex-direction: column;
+            gap: 1.25rem;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
         }
 
-        .hero-content h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.4rem;
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary-cyan), var(--accent-purple));
         }
 
-        .hero-content p {
+        .hero-banner h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #FFFFFF;
+        }
+
+        .hero-banner p {
             color: var(--text-muted);
-            font-size: 0.9rem;
-            max-width: 850px;
-            line-height: 1.5;
+            max-width: 900px;
+            line-height: 1.6;
+            font-size: 0.95rem;
         }
 
         .model-pill-group {
             display: flex;
             flex-wrap: wrap;
             gap: 0.75rem;
-            margin-top: 0.85rem;
         }
 
         .model-tag {
-            background: rgba(255, 255, 255, 0.05);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-glass);
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .model-tag i {
             color: var(--primary-cyan);
         }
 
-        /* Grid Layout */
+        /* Main Workspace Grid */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 440px 1fr;
+            grid-template-columns: 460px 1fr;
             gap: 2rem;
             align-items: start;
         }
 
-        /* Modality Selector Tabs */
-        .modality-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 0.4rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-glass);
-            gap: 0.4rem;
-            margin-bottom: 1rem;
+        @media (max-width: 1050px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .modality-tab {
-            padding: 0.65rem 0.5rem;
-            border-radius: var(--radius-sm);
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-        }
-
-        .modality-tab.active {
-            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
-            color: #070B12;
-            box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3);
-        }
-
-        /* Left Column - Input Panel */
-        .upload-section {
-            padding: 1.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-
+        /* Section Titles */
         .section-title {
             font-size: 1.1rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            color: var(--text-main);
+            gap: 0.65rem;
+            color: #FFFFFF;
+            margin-bottom: 1.25rem;
         }
 
         .section-title i {
             color: var(--primary-cyan);
         }
 
-        /* Dropzone */
+        /* Modality Selector Tabs */
+        .modality-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modality-tab {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius-md);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-sans);
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .modality-tab:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-main);
+            border-color: rgba(0, 242, 254, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .modality-tab.active {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.15));
+            border-color: var(--primary-cyan);
+            color: #FFFFFF;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
+        }
+
+        .modality-tab i {
+            font-size: 1.15rem;
+            color: var(--primary-cyan);
+        }
+
+        .modality-tab.nlp-tab {
+            grid-column: span 2;
+        }
+
+        .modality-tab.nlp-tab i {
+            color: var(--accent-purple);
+        }
+
+        /* Left Input Card */
+        .upload-section {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
         .dropzone {
             border: 2px dashed rgba(0, 242, 254, 0.3);
             border-radius: var(--radius-md);
-            padding: 2.25rem 1.5rem;
+            padding: 2.5rem 1.5rem;
             text-align: center;
             background: rgba(0, 242, 254, 0.02);
-            transition: all 0.3s ease;
             cursor: pointer;
+            transition: all 0.3s ease;
             position: relative;
         }
 
         .dropzone:hover, .dropzone.dragover {
             border-color: var(--primary-cyan);
-            background: rgba(0, 242, 254, 0.08);
-            transform: translateY(-2px);
+            background: rgba(0, 242, 254, 0.06);
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.15);
         }
 
         .dropzone-icon {
-            font-size: 2.75rem;
+            font-size: 2.5rem;
             color: var(--primary-cyan);
             margin-bottom: 0.85rem;
-            opacity: 0.9;
+            transition: transform 0.3s ease;
+        }
+
+        .dropzone:hover .dropzone-icon {
+            transform: scale(1.1);
         }
 
         .dropzone h3 {
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #FFFFFF;
             margin-bottom: 0.35rem;
         }
 
         .dropzone p {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
         }
 
@@ -306,44 +381,15 @@
             display: none;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
-            color: #070B12;
-            border: none;
-            padding: 0.85rem 1.5rem;
-            border-radius: var(--radius-md);
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            transition: all 0.25s ease;
-            width: 100%;
-            box-shadow: 0 4px 16px rgba(0, 242, 254, 0.3);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(0, 242, 254, 0.5);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        /* Demo Samples Selector */
+        /* Samples Section */
         .samples-box {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.65rem;
         }
 
         .samples-box label {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -351,129 +397,217 @@
         }
 
         .sample-btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
         .sample-btn {
-            padding: 0.55rem;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-glass);
+            padding: 0.5rem 0.85rem;
             border-radius: var(--radius-sm);
             color: var(--text-main);
-            font-size: 0.75rem;
+            font-family: var(--font-sans);
+            font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
+            gap: 0.45rem;
+            transition: all 0.2s ease;
         }
 
         .sample-btn:hover {
-            border-color: var(--primary-cyan);
-            background: rgba(0, 242, 254, 0.08);
-            color: var(--primary-cyan);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
         }
 
-        /* Right Column - Results Display */
+        /* NLP Input Container */
+        .nlp-container {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .nlp-textarea {
+            width: 100%;
+            height: 180px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .nlp-textarea:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
+        }
+
+        /* Action Button */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
+            color: #070B12;
+            border: none;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.3);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 242, 254, 0.45);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Right Results Panel */
         .results-section {
-            padding: 1.75rem;
+            padding: 2rem;
+            min-height: 580px;
             display: flex;
             flex-direction: column;
-            gap: 1.75rem;
-            min-height: 600px;
         }
 
         .placeholder-state {
-            flex: 1;
+            margin: auto;
+            text-align: center;
+            padding: 3rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            text-align: center;
+            gap: 1rem;
             color: var(--text-dim);
-            padding: 4rem 2rem;
-            gap: 1.25rem;
         }
 
         .placeholder-icon {
             font-size: 3.5rem;
-            opacity: 0.3;
-            color: var(--primary-cyan);
+            color: var(--text-dim);
+            opacity: 0.4;
         }
 
-        /* Active Results layout */
+        .placeholder-state h3 {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .placeholder-state p {
+            font-size: 0.88rem;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+        /* Loading Box */
+        .loader-box {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: auto;
+            padding: 3.5rem 1rem;
+            gap: 1.25rem;
+        }
+
+        .spinner {
+            width: 55px;
+            height: 55px;
+            border: 4px solid rgba(0, 242, 254, 0.15);
+            border-left-color: var(--primary-cyan);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Active Results Content */
         .results-content {
             display: none;
             flex-direction: column;
-            gap: 1.75rem;
-            animation: fadeIn 0.4s ease-in-out;
+            gap: 1.5rem;
+            animation: fadeIn 0.4s ease forwards;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Prediction Banner */
+        /* Result Header Banner */
         .result-header-card {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.25rem 1.75rem;
-            border-radius: var(--radius-md);
-            background: rgba(255, 255, 255, 0.02);
+            padding: 1.25rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
         }
 
         .diag-badge {
-            padding: 0.5rem 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
             border-radius: 30px;
             font-weight: 800;
             font-size: 1.1rem;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .diag-badge.high {
-            background: rgba(244, 63, 94, 0.15);
-            border: 1px solid rgba(244, 63, 94, 0.4);
-            color: var(--danger-rose);
+            letter-spacing: -0.3px;
         }
 
         .diag-badge.normal {
             background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
+            border: 1px solid var(--success-emerald);
             color: var(--success-emerald);
         }
 
-        .diag-badge.cell {
-            background: rgba(0, 242, 254, 0.15);
-            border: 1px solid rgba(0, 242, 254, 0.4);
-            color: var(--primary-cyan);
+        .diag-badge.pathological {
+            background: rgba(244, 63, 94, 0.15);
+            border: 1px solid var(--danger-rose);
+            color: var(--danger-rose);
         }
 
         .confidence-box {
+            text-align: right;
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
             gap: 0.35rem;
+            align-items: flex-end;
         }
 
         .confidence-val {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 800;
             font-family: var(--font-mono);
             color: var(--primary-cyan);
         }
 
         .confidence-meter {
-            width: 180px;
+            width: 140px;
             height: 6px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
@@ -482,101 +616,227 @@
 
         .confidence-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary-blue), var(--primary-cyan));
+            background: linear-gradient(90deg, var(--primary-cyan), var(--success-emerald));
             border-radius: 4px;
             width: 0%;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.6s ease;
         }
 
-        /* Dual Viewer */
+        /* Dual Viewer Grid */
         .viewer-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 650px) {
+            .viewer-container {
+                grid-template-columns: 1fr;
+            }
         }
 
         .image-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 0.85rem;
         }
 
         .image-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            font-weight: 700;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-glass);
+            font-size: 0.82rem;
+            font-weight: 600;
             color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .img-frame {
-            position: relative;
-            width: 100%;
             aspect-ratio: 1;
-            background: #000;
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            border: 1px solid var(--border-glass);
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0.5rem;
+            background: #020408;
+            position: relative;
         }
 
         .img-frame img {
-            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Heatmap Opacity Slider */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            gap: 1rem;
+        }
+
+        .slider-container label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            accent-color: var(--primary-cyan);
+            cursor: pointer;
+        }
+
+        /* Probability Bars */
+        .prob-section {
+            display: none;
+            flex-direction: column;
+            gap: 0.65rem;
+            padding: 1rem 1.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+        }
+
+        .prob-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .prob-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.82rem;
+        }
+
+        .prob-label {
+            width: 110px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .prob-track {
+            flex: 1;
+            height: 7px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .prob-bar {
             height: 100%;
-            object-fit: cover;
+            background: linear-gradient(90deg, var(--primary-cyan), var(--primary-blue));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.6s ease;
+        }
+
+        .prob-pct {
+            width: 50px;
+            text-align: right;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--primary-cyan);
         }
 
         /* Clinical Report Card */
         .clinical-report {
             padding: 1.25rem 1.5rem;
             background: rgba(0, 242, 254, 0.03);
-            border-left: 4px solid var(--primary-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.2);
             border-radius: var(--radius-md);
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
+            gap: 0.65rem;
         }
 
         .clinical-report h4 {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 700;
             color: var(--primary-cyan);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
         .clinical-report p {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-main);
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
-        /* Loading Overlay */
-        .loader-box {
+        /* NLP Output Presentation */
+        .nlp-result-box {
             display: none;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem;
             gap: 1rem;
+            padding: 1.5rem;
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: var(--radius-md);
         }
 
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(0, 242, 254, 0.1);
-            border-left-color: var(--primary-cyan);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .nlp-result-box h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .nlp-summary-text {
+            font-size: 0.92rem;
+            line-height: 1.7;
+            color: #FFFFFF;
+            white-space: pre-wrap;
+        }
+
+        /* Export Bar */
+        .action-export-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            padding: 0.65rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
         }
 
         /* Footer */
@@ -592,22 +852,22 @@
 </head>
 <body>
 
-    <!-- Header -->
+    <!-- Header Navigation -->
     <header>
         <a href="#" class="brand-logo">
             <div class="logo-icon">
-                <i class="fa-solid fa-brain"></i>
+                <i class="fa-solid fa-heart-pulse"></i>
             </div>
             <div class="brand-text">
                 <h1>XAI-MedVision</h1>
-                <p>4-Modal Clinical AI Suite</p>
+                <p>4-Modal Clinical AI & Explainability Platform</p>
             </div>
         </a>
 
         <div class="header-status">
-            <div class="status-badge">
+            <div class="status-badge" id="api-status-badge">
                 <div class="pulse-dot"></div>
-                4 Deep XAI Models Active
+                <span id="api-status-text">Checking Backend...</span>
             </div>
         </div>
     </header>
@@ -616,15 +876,14 @@
     <main>
         <!-- Hero Header -->
         <section class="glass-panel hero-banner">
-            <div class="hero-content">
-                <h2>4-Modal Explainable AI Medical Vision Suite</h2>
-                <p>Select from 4 clinical imaging modalities (Chest X-Ray, Blood CBC, Brain MRI, Bone Fracture) to compute deep neural classification and generate high-resolution PyTorch Grad-CAM explainability heatmaps.</p>
-                <div class="model-pill-group">
-                    <span class="model-tag"><i class="fa-solid fa-lungs"></i> Chest X-Ray (DenseNet-121)</span>
-                    <span class="model-tag"><i class="fa-solid fa-droplet"></i> Blood CBC (MobileNet-V2)</span>
-                    <span class="model-tag"><i class="fa-solid fa-brain"></i> Brain MRI (EfficientNet-B0)</span>
-                    <span class="model-tag"><i class="fa-solid fa-bone"></i> Bone Fracture (ResNet-50)</span>
-                </div>
+            <h2>4-Modal Explainable AI Diagnostic Suite</h2>
+            <p>Compute real-time deep neural classifications and high-resolution PyTorch Grad-CAM explainability heatmaps across Chest X-Ray, Hematology Blood CBC, Brain Tumor MRI, and Bone Fracture X-Ray.</p>
+            <div class="model-pill-group">
+                <span class="model-tag"><i class="fa-solid fa-lungs"></i> Chest X-Ray (DenseNet-121)</span>
+                <span class="model-tag"><i class="fa-solid fa-droplet"></i> Blood CBC (MobileNet-V2)</span>
+                <span class="model-tag"><i class="fa-solid fa-brain"></i> Brain MRI (EfficientNet-B0)</span>
+                <span class="model-tag"><i class="fa-solid fa-bone"></i> Bone Fracture (ResNet-50)</span>
+                <span class="model-tag"><i class="fa-solid fa-file-waveform"></i> Clinical NLP (FLAN-T5)</span>
             </div>
         </section>
 
@@ -644,7 +903,7 @@
                         <i class="fa-solid fa-lungs"></i> Chest X-Ray
                     </button>
                     <button class="modality-tab" id="tab-blood" onclick="switchModality('blood')">
-                        <i class="fa-solid fa-vial-virus"></i> Blood CBC
+                        <i class="fa-solid fa-droplet"></i> Blood CBC
                     </button>
                     <button class="modality-tab" id="tab-brain" onclick="switchModality('brain')">
                         <i class="fa-solid fa-brain"></i> Brain MRI
@@ -652,49 +911,69 @@
                     <button class="modality-tab" id="tab-bone" onclick="switchModality('bone')">
                         <i class="fa-solid fa-bone"></i> Bone Fracture
                     </button>
+                    <button class="modality-tab nlp-tab" id="tab-nlp" onclick="switchModality('nlp')">
+                        <i class="fa-solid fa-file-waveform"></i> Clinical Note Summarizer (NLP)
+                    </button>
                 </div>
 
-                <!-- Interactive Dropzone -->
-                <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
-                    <i class="fa-solid fa-file-medical dropzone-icon" id="dropzone-icon"></i>
-                    <h3 id="dropzone-title">Drag & Drop Chest X-Ray Scan</h3>
-                    <p>Supports PNG, JPG, JPEG medical images</p>
-                    <input type="file" id="file-input" accept="image/*">
-                </div>
-
-                <!-- Preview thumbnail if selected -->
-                <div id="file-preview-box" style="display: none; align-items: center; gap: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
-                    <img id="file-preview-img" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;" src="" alt="Thumbnail">
-                    <div style="flex: 1; overflow: hidden;">
-                        <div id="file-preview-name" style="font-size: 0.85rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">filename.jpg</div>
-                        <div id="file-preview-size" style="font-size: 0.75rem; color: var(--text-muted);">0 KB</div>
+                <!-- Vision Image Dropzone -->
+                <div id="vision-input-container">
+                    <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+                        <i class="fa-solid fa-file-medical dropzone-icon" id="dropzone-icon"></i>
+                        <h3 id="dropzone-title">Drag & Drop Chest X-Ray Scan</h3>
+                        <p>Supports PNG, JPG, JPEG medical scans</p>
+                        <input type="file" id="file-input" accept="image/*">
                     </div>
-                    <button type="button" onclick="clearSelectedFile(event)" style="background: none; border: none; color: var(--danger-rose); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
-                </div>
 
-                <!-- Quick Samples -->
-                <div class="samples-box">
-                    <label>Or Test Quick Demo Sample:</label>
-                    <div class="sample-btn-group">
-                        <button class="sample-btn" onclick="loadDemoSample('xray')">
-                            <i class="fa-solid fa-lungs" style="color: var(--danger-rose);"></i> Chest X-Ray
-                        </button>
-                        <button class="sample-btn" onclick="loadDemoSample('blood')">
-                            <i class="fa-solid fa-vial" style="color: var(--primary-cyan);"></i> Blood Cell
-                        </button>
-                        <button class="sample-btn" onclick="loadDemoSample('brain')">
-                            <i class="fa-solid fa-brain" style="color: var(--accent-purple);"></i> Brain MRI
-                        </button>
-                        <button class="sample-btn" onclick="loadDemoSample('bone')">
-                            <i class="fa-solid fa-bone" style="color: var(--warning-amber);"></i> Bone Fracture
-                        </button>
+                    <!-- File preview thumbnail -->
+                    <div id="file-preview-box" style="display: none; align-items: center; gap: 1rem; padding: 0.75rem; margin-top: 1rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+                        <img id="file-preview-img" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;" src="" alt="Thumbnail">
+                        <div style="flex: 1; overflow: hidden;">
+                            <div id="file-preview-name" style="font-size: 0.85rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">filename.jpg</div>
+                            <div id="file-preview-size" style="font-size: 0.75rem; color: var(--text-muted);">0 KB</div>
+                        </div>
+                        <button type="button" onclick="clearSelectedFile(event)" style="background: none; border: none; color: var(--danger-rose); cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <!-- Quick Demo Samples -->
+                    <div class="samples-box" style="margin-top: 1.25rem;">
+                        <label>Or Test Quick Demo Sample:</label>
+                        <div class="sample-btn-group" id="sample-buttons-container">
+                            <button class="sample-btn" onclick="loadDemoSample('xray', 'sample_chest_gradcam.png')">
+                                <i class="fa-solid fa-lungs" style="color: var(--danger-rose);"></i> Chest Pneumonia
+                            </button>
+                            <button class="sample-btn" onclick="loadDemoSample('blood', 'sample_blood_gradcam.png')">
+                                <i class="fa-solid fa-droplet" style="color: var(--primary-cyan);"></i> Blood Cell
+                            </button>
+                            <button class="sample-btn" onclick="loadDemoSample('brain', 'samples/brain_glioma.jpg')">
+                                <i class="fa-solid fa-brain" style="color: var(--accent-purple);"></i> Brain Glioma
+                            </button>
+                            <button class="sample-btn" onclick="loadDemoSample('bone', 'samples/bone_fractured.jpg')">
+                                <i class="fa-solid fa-bone" style="color: var(--warning-amber);"></i> Bone Fracture
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Analyze Button -->
+                <!-- NLP Text Input Container -->
+                <div id="nlp-input-container" class="nlp-container">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Paste Unstructured Clinical Discharge Note:</label>
+                    <textarea class="nlp-textarea" id="nlp-text" placeholder="Patient is a 64-year-old male with a history of hypertension presenting with acute dyspnea..."></textarea>
+                    
+                    <div class="samples-box">
+                        <label>Insert Clinical Sample Note:</label>
+                        <div class="sample-btn-group">
+                            <button class="sample-btn" onclick="loadNlpSample('pulmonology')"><i class="fa-solid fa-lungs"></i> Pulmonology</button>
+                            <button class="sample-btn" onclick="loadNlpSample('cardiology')"><i class="fa-solid fa-heart-pulse"></i> Cardiology</button>
+                            <button class="sample-btn" onclick="loadNlpSample('ortho')"><i class="fa-solid fa-bone"></i> Orthopedics</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Run Diagnostic Button -->
                 <button class="btn-primary" id="analyze-btn" onclick="runAnalysis()">
                     <i class="fa-solid fa-microscope"></i>
-                    Run XAI Diagnostic Scan
+                    <span id="btn-text">Run XAI Diagnostic Scan</span>
                 </button>
             </section>
 
@@ -708,8 +987,8 @@
                 <!-- Initial Empty State -->
                 <div class="placeholder-state" id="placeholder-state">
                     <i class="fa-solid fa-laptop-medical placeholder-icon"></i>
-                    <h3>Awaiting Medical Image Upload</h3>
-                    <p>Select your modality, choose or drop a medical scan on the left, and click "Run XAI Diagnostic Scan".</p>
+                    <h3>Awaiting Clinical Input</h3>
+                    <p>Select your diagnostic modality on the left, upload a medical scan or test a sample, and click "Run XAI Diagnostic Scan".</p>
                 </div>
 
                 <!-- Loading State -->
@@ -719,7 +998,7 @@
                     <span style="font-size: 0.8rem; color: var(--text-muted);">Computing gradient activation maps across deep neural layers</span>
                 </div>
 
-                <!-- Active Output Content -->
+                <!-- Vision Results Display -->
                 <div class="results-content" id="results-content">
                     
                     <!-- Prediction Result Banner -->
@@ -746,7 +1025,7 @@
                         <!-- Original Image -->
                         <div class="image-card">
                             <div class="image-card-header">
-                                <span><i class="fa-solid fa-image"></i> Original Medical Image</span>
+                                <span><i class="fa-solid fa-image"></i> Original Medical Scan</span>
                                 <span style="font-family: var(--font-mono); font-size: 0.75rem;">224x224 RGB</span>
                             </div>
                             <div class="img-frame">
@@ -757,8 +1036,8 @@
                         <!-- Grad-CAM Heatmap -->
                         <div class="image-card">
                             <div class="image-card-header">
-                                <span><i class="fa-solid fa-fire"></i> Grad-CAM XAI Heatmap Overlay</span>
-                                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary-cyan);" id="layer-tag">Layer Target</span>
+                                <span><i class="fa-solid fa-fire"></i> Grad-CAM XAI Heatmap</span>
+                                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary-cyan);" id="layer-tag">Deep Layer Target</span>
                             </div>
                             <div class="img-frame">
                                 <img id="gradcam-img" src="" alt="Grad-CAM Overlay">
@@ -766,12 +1045,43 @@
                         </div>
                     </div>
 
+                    <!-- Heatmap Opacity Slider -->
+                    <div class="slider-container">
+                        <label><i class="fa-solid fa-sliders" style="color: var(--primary-cyan);"></i> Heatmap Blend Opacity:</label>
+                        <input type="range" id="heatmap-slider" min="0" max="100" value="100" oninput="adjustHeatmapOpacity(this.value)">
+                        <span id="slider-pct" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--primary-cyan); min-width: 40px; text-align: right;">100%</span>
+                    </div>
+
+                    <!-- Multi-Class Probability Bars -->
+                    <div class="prob-section" id="prob-section">
+                        <div class="prob-title">Class Distribution Probabilities</div>
+                        <div id="prob-bars-container"></div>
+                    </div>
+
                     <!-- Clinical Findings Report -->
                     <div class="clinical-report">
-                        <h4><i class="fa-solid fa-notes-medical"></i> Clinical XAI Summary & Morphological Findings</h4>
+                        <h4><i class="fa-solid fa-notes-medical"></i> Clinical Morphological Findings & Recommendation</h4>
                         <p id="clinical-text">Diagnostic findings and explainability heatmap summary.</p>
                     </div>
 
+                    <!-- Action bar -->
+                    <div class="action-export-bar">
+                        <button class="btn-secondary" onclick="window.print()">
+                            <i class="fa-solid fa-print"></i> Print / Export Clinical Report
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- NLP Results Display -->
+                <div class="nlp-result-box" id="nlp-result-box">
+                    <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Structured Clinical Discharge Summary (FLAN-T5)</h4>
+                    <div class="nlp-summary-text" id="nlp-summary-text"></div>
+                    <div class="action-export-bar" style="margin-top: 1rem;">
+                        <button class="btn-secondary" onclick="window.print()">
+                            <i class="fa-solid fa-print"></i> Print Clinical Discharge Summary
+                        </button>
+                    </div>
                 </div>
 
             </section>
@@ -781,7 +1091,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 XAI-MedVision 4-Modal Platform &bull; PyTorch, DenseNet-121, MobileNet-V2, EfficientNet-B0, ResNet-50 & Grad-CAM</p>
+        <p>&copy; 2026 XAI-MedVision 4-Modal Platform &bull; DenseNet-121, MobileNet-V2, EfficientNet-B0, ResNet-50 & FLAN-T5</p>
     </footer>
 
     <!-- JS Logic -->
@@ -792,29 +1102,80 @@
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('file-input');
 
+        // Dynamic Backend URL Discovery
+        function getApiBaseUrl() {
+            const stored = localStorage.getItem('XAI_BACKEND_URL');
+            if (stored) return stored.replace(/\/$/, '');
+            if (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost') {
+                return 'https://xai-medvision.onrender.com';
+            }
+            return '';
+        }
+
+        // Live Backend Ping & Health Status
+        async function checkBackendHealth() {
+            const statusBadge = document.getElementById('api-status-badge');
+            const statusText = document.getElementById('api-status-text');
+            const apiUrl = getApiBaseUrl();
+
+            const startTime = performance.now();
+            try {
+                const response = await fetch(`${apiUrl}/api/health`, { method: 'GET', headers: { 'Accept': 'application/json' } });
+                const latency = Math.round(performance.now() - startTime);
+
+                if (response.ok) {
+                    statusBadge.className = 'status-badge';
+                    statusText.textContent = `Backend Online · ${latency}ms`;
+                } else {
+                    statusBadge.className = 'status-badge warning';
+                    statusText.textContent = `Backend Initializing (${response.status})`;
+                }
+            } catch (err) {
+                statusBadge.className = 'status-badge warning';
+                statusText.textContent = `Waking Server (~30s)...`;
+            }
+        }
+
+        // Initial Ping + Recurring Check
+        checkBackendHealth();
+        setInterval(checkBackendHealth, 30000);
+
         function switchModality(modality) {
             currentModality = modality;
             
-            document.getElementById('tab-xray').classList.toggle('active', modality === 'xray');
-            document.getElementById('tab-blood').classList.toggle('active', modality === 'blood');
-            document.getElementById('tab-brain').classList.toggle('active', modality === 'brain');
-            document.getElementById('tab-bone').classList.toggle('active', modality === 'bone');
+            ['xray', 'blood', 'brain', 'bone', 'nlp'].forEach(m => {
+                const tab = document.getElementById(`tab-${m}`);
+                if (tab) tab.classList.toggle('active', modality === m);
+            });
 
+            const visionContainer = document.getElementById('vision-input-container');
+            const nlpContainer = document.getElementById('nlp-input-container');
+            const btnText = document.getElementById('btn-text');
             const title = document.getElementById('dropzone-title');
             const icon = document.getElementById('dropzone-icon');
 
-            if (modality === 'xray') {
-                title.textContent = 'Drag & Drop Chest X-Ray Scan';
-                icon.className = 'fa-solid fa-lungs dropzone-icon';
-            } else if (modality === 'blood') {
-                title.textContent = 'Drag & Drop Microscopic Blood Cell Image';
-                icon.className = 'fa-solid fa-vial-virus dropzone-icon';
-            } else if (modality === 'brain') {
-                title.textContent = 'Drag & Drop Brain Tumor MRI Scan';
-                icon.className = 'fa-solid fa-brain dropzone-icon';
-            } else if (modality === 'bone') {
-                title.textContent = 'Drag & Drop Bone Fracture X-Ray Scan';
-                icon.className = 'fa-solid fa-bone dropzone-icon';
+            if (modality === 'nlp') {
+                visionContainer.style.display = 'none';
+                nlpContainer.style.display = 'flex';
+                btnText.textContent = 'Generate Clinical Note Summary';
+            } else {
+                visionContainer.style.display = 'block';
+                nlpContainer.style.display = 'none';
+                btnText.textContent = 'Run XAI Diagnostic Scan';
+
+                if (modality === 'xray') {
+                    title.textContent = 'Drag & Drop Chest X-Ray Scan';
+                    icon.className = 'fa-solid fa-lungs dropzone-icon';
+                } else if (modality === 'blood') {
+                    title.textContent = 'Drag & Drop Microscopic Blood Cell Image';
+                    icon.className = 'fa-solid fa-droplet dropzone-icon';
+                } else if (modality === 'brain') {
+                    title.textContent = 'Drag & Drop Brain Tumor MRI Scan';
+                    icon.className = 'fa-solid fa-brain dropzone-icon';
+                } else if (modality === 'bone') {
+                    title.textContent = 'Drag & Drop Bone Fracture X-Ray Scan';
+                    icon.className = 'fa-solid fa-bone dropzone-icon';
+                }
             }
         }
 
@@ -857,12 +1218,13 @@
             const previewSize = document.getElementById('file-preview-size');
 
             previewName.textContent = file.name;
-            previewSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+            previewSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
 
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = function(e) {
                 previewImg.src = e.target.result;
-            };
+                document.getElementById('original-img').src = e.target.result;
+            }
             reader.readAsDataURL(file);
 
             previewBox.style.display = 'flex';
@@ -875,59 +1237,93 @@
             document.getElementById('file-preview-box').style.display = 'none';
         }
 
-        async function loadDemoSample(type) {
+        async function loadDemoSample(type, sampleFile) {
             switchModality(type);
-
-            let sampleUrl = '';
-            let sampleName = '';
-
-            if (type === 'xray') {
-                sampleUrl = '/static/sample_chest_gradcam.png';
-                sampleName = 'sample_chest_xray.png';
-            } else if (type === 'blood') {
-                sampleUrl = '/static/sample_blood_gradcam.png';
-                sampleName = 'sample_blood_cell.png';
-            } else if (type === 'brain') {
-                sampleUrl = '/static/samples/brain_glioma.jpg';
-                sampleName = 'brain_glioma_sample.jpg';
-            } else if (type === 'bone') {
-                sampleUrl = '/static/samples/bone_fractured.jpg';
-                sampleName = 'bone_fractured_sample.jpg';
-            }
-
+            const sampleUrl = `./static/${sampleFile}`;
             try {
                 const response = await fetch(sampleUrl);
                 const blob = await response.blob();
-                const file = new File([blob], sampleName, { type: blob.type || "image/jpeg" });
+                const file = new File([blob], sampleFile.split('/').pop(), { type: blob.type || "image/jpeg" });
                 handleFileSelect(file);
             } catch (err) {
-                alert("Could not load sample image: " + err);
+                alert("Could not load sample: " + err);
             }
         }
 
-        function getApiBaseUrl() {
-            const stored = localStorage.getItem('XAI_BACKEND_URL');
-            if (stored) return stored.replace(/\/$/, '');
-            if (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost') {
-                return 'https://xai-medvision.onrender.com';
-            }
-            return '';
+        function loadNlpSample(category) {
+            const samples = {
+                'pulmonology': "Patient is a 62-year-old male with acute respiratory distress, productive cough with yellow sputum, and fever of 38.9°C. Chest radiograph demonstrates right lower lobe consolidation consistent with community-acquired pneumonia. Initiated on IV Ceftriaxone 1g daily and Azithromycin 500mg. Oxygen saturation improved from 88% on room air to 95% on 2L nasal cannula. Discharged on oral Levofloxacin 500mg daily for 7 days with pulmonary clinic follow-up in 2 weeks.",
+                'cardiology': "Patient is a 58-year-old female presenting with exertional chest pain and shortness of breath. ECG revealed ST-segment depressions in lateral leads. Cardiac enzymes elevated with Troponin I at 1.4 ng/mL. Underwent successful diagnostic coronary catheterization showing 85% proximal LAD stenosis, treated with drug-eluting stent placement. Patient stabilized, prescribed Dual Antiplatelet Therapy (Aspirin 81mg + Clopidogrel 75mg daily) and Atorvastatin 80mg. Advised cardiac rehabilitation.",
+                'ortho': "Patient is a 24-year-old athlete presenting after a sports collision with severe acute pain and inability to bear weight on the left leg. Plain radiograph of the left lower extremity demonstrates a displaced oblique fracture of the distal third tibial shaft with intact fibula. Closed reduction performed under conscious sedation and immobilized in a non-weight-bearing long leg cast. Prescribed oral analgesics. Scheduled for orthopedic surgical review in 5 days."
+            };
+            document.getElementById('nlp-text').value = samples[category] || "";
+        }
+
+        function adjustHeatmapOpacity(val) {
+            const pct = val / 100;
+            document.getElementById('slider-pct').textContent = `${val}%`;
+            document.getElementById('gradcam-img').style.opacity = pct;
         }
 
         async function runAnalysis() {
+            const placeholder = document.getElementById('placeholder-state');
+            const loader = document.getElementById('loader-box');
+            const results = document.getElementById('results-content');
+            const nlpResults = document.getElementById('nlp-result-box');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const loaderText = document.getElementById('loader-text');
+
+            const apiUrl = getApiBaseUrl();
+
+            if (currentModality === 'nlp') {
+                const text = document.getElementById('nlp-text').value.trim();
+                if (!text) {
+                    alert("Please enter or load a clinical note first.");
+                    return;
+                }
+
+                placeholder.style.display = 'none';
+                results.style.display = 'none';
+                nlpResults.style.display = 'none';
+                loader.style.display = 'flex';
+                loaderText.textContent = "Synthesizing Clinical Discharge Summary (FLAN-T5)...";
+                analyzeBtn.disabled = true;
+
+                try {
+                    const response = await fetch(`${apiUrl}/api/summarize/clinical-note`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text })
+                    });
+                    const data = await response.json();
+                    
+                    loader.style.display = 'none';
+                    analyzeBtn.disabled = false;
+
+                    if (response.ok && data.success) {
+                        nlpResults.style.display = 'flex';
+                        document.getElementById('nlp-summary-text').textContent = data.summary;
+                    } else {
+                        alert("Summarization error: " + (data.detail || "Server error"));
+                        placeholder.style.display = 'flex';
+                    }
+                } catch (err) {
+                    loader.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    alert("API Connection Error: Backend is currently waking up or unreachable. Please try again in 15 seconds.");
+                    placeholder.style.display = 'flex';
+                }
+                return;
+            }
+
             if (!selectedFile) {
                 alert("Please select or drop a medical image first.");
                 return;
             }
 
-            const placeholder = document.getElementById('placeholder-state');
-            const loader = document.getElementById('loader-box');
-            const results = document.getElementById('results-content');
-            const analyzeBtn = document.getElementById('analyze-btn');
-            const loaderText = document.getElementById('loader-text');
-
             placeholder.style.display = 'none';
             results.style.display = 'none';
+            nlpResults.style.display = 'none';
             loader.style.display = 'flex';
             analyzeBtn.disabled = true;
 
@@ -939,8 +1335,8 @@
             };
 
             const modelTextMap = {
-                'xray': 'Executing DenseNet-121 & Grad-CAM X-Ray Analysis...',
-                'blood': 'Executing MobileNet-V2 Hematology Blood Cell Analysis...',
+                'xray': 'Executing DenseNet-121 & Grad-CAM Pneumonia Analysis...',
+                'blood': 'Executing MobileNet-V2 Hematology CBC Analysis...',
                 'brain': 'Executing EfficientNet-B0 Brain Tumor MRI Analysis...',
                 'bone': 'Executing ResNet-50 Bone Fracture X-Ray Analysis...'
             };
@@ -950,90 +1346,83 @@
             const formData = new FormData();
             formData.append('file', selectedFile);
 
-            const apiBase = getApiBaseUrl();
-            const endpoint = apiBase + endpointMap[currentModality];
-
             try {
-                const response = await fetch(endpoint, {
+                const response = await fetch(`${apiUrl}${endpointMap[currentModality]}`, {
                     method: 'POST',
                     body: formData
                 });
 
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.detail || "Server error during analysis");
-                }
-
                 const data = await response.json();
-                displayResults(data);
-
-            } catch (err) {
-                alert("Error analyzing image: " + err.message);
-                placeholder.style.display = 'flex';
-            } finally {
                 loader.style.display = 'none';
                 analyzeBtn.disabled = false;
+
+                if (response.ok && data.success) {
+                    results.style.display = 'flex';
+                    
+                    const label = data.prediction.label;
+                    const confidence = data.prediction.confidence;
+                    const riskLevel = data.prediction.risk_level;
+                    const recommendation = data.prediction.recommendation;
+
+                    document.getElementById('modality-title-tag').textContent = `${data.modality} Diagnostic`;
+                    document.getElementById('badge-text').textContent = label.toUpperCase();
+
+                    const isPathological = (riskLevel === 'HIGH' || label.toUpperCase() === 'PNEUMONIA' || label.toLowerCase() === 'fractured' || (label.toLowerCase() !== 'notumor' && currentModality === 'brain'));
+                    
+                    const diagBadge = document.getElementById('diag-badge');
+                    const badgeIcon = document.getElementById('badge-icon');
+
+                    if (isPathological) {
+                        diagBadge.className = 'diag-badge pathological';
+                        badgeIcon.className = 'fa-solid fa-triangle-exclamation';
+                    } else {
+                        diagBadge.className = 'diag-badge normal';
+                        badgeIcon.className = 'fa-solid fa-circle-check';
+                    }
+
+                    document.getElementById('confidence-val').textContent = `${confidence}%`;
+                    document.getElementById('confidence-fill').style.width = `${confidence}%`;
+
+                    document.getElementById('gradcam-img').src = `data:image/png;base64,${data.xai.gradcam_base64}`;
+                    document.getElementById('layer-tag').textContent = data.xai.method;
+                    document.getElementById('clinical-text').textContent = recommendation;
+
+                    // Multi-class probabilities if available
+                    const probSection = document.getElementById('prob-section');
+                    const probBarsContainer = document.getElementById('prob-bars-container');
+                    
+                    if (data.prediction.class_probabilities) {
+                        probSection.style.display = 'flex';
+                        probBarsContainer.innerHTML = '';
+                        
+                        Object.entries(data.prediction.class_probabilities).forEach(([cls, pct]) => {
+                            const row = document.createElement('div');
+                            row.className = 'prob-bar-row';
+                            row.innerHTML = `
+                                <div class="prob-label">${cls}</div>
+                                <div class="prob-track"><div class="prob-bar" style="width: ${pct}%;"></div></div>
+                                <div class="prob-pct">${pct}%</div>
+                            `;
+                            probBarsContainer.appendChild(row);
+                        });
+                    } else {
+                        probSection.style.display = 'none';
+                    }
+
+                    // Reset heatmap slider to 100%
+                    document.getElementById('heatmap-slider').value = 100;
+                    adjustHeatmapOpacity(100);
+
+                } else {
+                    alert("Diagnostic processing error: " + (data.detail || "Server error"));
+                    placeholder.style.display = 'flex';
+                }
+            } catch (err) {
+                loader.style.display = 'none';
+                analyzeBtn.disabled = false;
+                alert("API Connection Error: Backend server is waking up or unreachable. Please retry in 15 seconds.");
+                placeholder.style.display = 'flex';
             }
-        }
-
-        function displayResults(data) {
-            const resultsContent = document.getElementById('results-content');
-            const modalityTag = document.getElementById('modality-title-tag');
-            const diagBadge = document.getElementById('diag-badge');
-            const badgeIcon = document.getElementById('badge-icon');
-            const badgeText = document.getElementById('badge-text');
-            const confVal = document.getElementById('confidence-val');
-            const confFill = document.getElementById('confidence-fill');
-            const origImg = document.getElementById('original-img');
-            const gradcamImg = document.getElementById('gradcam-img');
-            const layerTag = document.getElementById('layer-tag');
-            const clinicalText = document.getElementById('clinical-text');
-
-            const pred = data.prediction;
-            modalityTag.textContent = data.modality + ' Diagnostic';
-
-            if (currentModality === 'xray') {
-                const isPneumonia = pred.label.toUpperCase() === 'PNEUMONIA';
-                diagBadge.className = isPneumonia ? 'diag-badge high' : 'diag-badge normal';
-                badgeIcon.className = isPneumonia ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check';
-                badgeText.textContent = isPneumonia ? 'PNEUMONIA DETECTED' : 'NORMAL SCAN';
-                layerTag.textContent = 'DenseNet denseblock4';
-            } else if (currentModality === 'blood') {
-                diagBadge.className = 'diag-badge cell';
-                badgeIcon.className = 'fa-solid fa-vial-virus';
-                badgeText.textContent = pred.label.toUpperCase() + ' CELL';
-                layerTag.textContent = 'MobileNet-V2 features[-1]';
-            } else if (currentModality === 'brain') {
-                const isTumor = pred.label.toLowerCase() !== 'notumor';
-                diagBadge.className = isTumor ? 'diag-badge high' : 'diag-badge normal';
-                badgeIcon.className = isTumor ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check';
-                badgeText.textContent = pred.label.toUpperCase();
-                layerTag.textContent = 'EfficientNet-B0 features[-1]';
-            } else if (currentModality === 'bone') {
-                const isFractured = pred.label.toLowerCase() === 'fractured';
-                diagBadge.className = isFractured ? 'diag-badge high' : 'diag-badge normal';
-                badgeIcon.className = isFractured ? 'fa-solid fa-bone' : 'fa-solid fa-circle-check';
-                badgeText.textContent = isFractured ? 'FRACTURE DETECTED' : 'NO FRACTURE';
-                layerTag.textContent = 'ResNet-50 layer4[-1]';
-            }
-
-            confVal.textContent = pred.confidence + '%';
-            confFill.style.width = pred.confidence + '%';
-
-            // Preview original file
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                origImg.src = e.target.result;
-            };
-            reader.readAsDataURL(selectedFile);
-
-            // Grad-CAM base64 overlay image
-            gradcamImg.src = 'data:image/png;base64,' + data.xai.gradcam_base64;
-
-            // Clinical summary text
-            clinicalText.textContent = pred.recommendation;
-
-            resultsContent.style.display = 'flex';
         }
     </script>
 </body>
