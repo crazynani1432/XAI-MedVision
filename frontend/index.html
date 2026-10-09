@@ -1167,6 +1167,7 @@
         let detectedScanInfo = null;
         let cachedImgElement = null;
         let cachedResultsPayload = null;
+        let isCurrentScanInvalid = false;
 
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('file-input');
@@ -1214,6 +1215,7 @@
         }
 
         function switchXaiMethod(method) {
+            if (isCurrentScanInvalid) return;
             currentXaiMethod = method;
             ['gradcam_pp', 'hirescam', 'eigencam'].forEach(m => {
                 const btn = document.getElementById(`tech-${m}`);
@@ -1235,6 +1237,7 @@
         }
 
         function switchColormap(cmap) {
+            if (isCurrentScanInvalid) return;
             currentColormap = cmap;
             ['turbo', 'sunset', 'ruby'].forEach(c => {
                 const btn = document.getElementById(`cmap-${c}`);
@@ -1247,6 +1250,7 @@
         }
 
         function adjustHeatmapThreshold(val) {
+            if (isCurrentScanInvalid) return;
             currentThreshold = val / 100;
             const label = val <= 16 ? "Diffuse" : (val <= 26 ? "Core" : "Focal Peak");
             document.getElementById('threshold-pct').textContent = label;
@@ -1332,11 +1336,22 @@
                     detectedScanInfo = detectAndValidateScan(imgData, file.name);
                     if (detectedScanInfo.isValid) {
                         setActiveModalityTag(detectedScanInfo.modality);
+                        const dropIcon = document.getElementById('dropzone-icon');
+                        dropIcon.style.color = '';
                     } else {
                         const statusTitle = document.getElementById('detector-status-title');
                         if (statusTitle) {
-                            statusTitle.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-rose); margin-right: 4px;"></i> Unrecognized / Non-Medical Image`;
+                            statusTitle.innerHTML = `<i class="fa-solid fa-ban" style="color: var(--danger-rose); margin-right: 4px;"></i> Non-Medical Image Detected — CANNOT BE DIAGNOSED`;
                         }
+                        ['brain', 'xray', 'bone', 'blood'].forEach(m => {
+                            const tag = document.getElementById(`tag-${m}`);
+                            if (tag) tag.classList.remove('active');
+                        });
+                        document.getElementById('dropzone-title').textContent = '⚠️ Non-Medical Image Rejected';
+                        document.getElementById('dropzone-sub').textContent = detectedScanInfo.reason;
+                        const dropIcon = document.getElementById('dropzone-icon');
+                        dropIcon.className = 'fa-solid fa-ban dropzone-icon';
+                        dropIcon.style.color = 'var(--danger-rose)';
                     }
                 };
                 img.src = e.target.result;
@@ -1351,11 +1366,14 @@
             selectedFile = null;
             detectedScanInfo = null;
             cachedImgElement = null;
+            isCurrentScanInvalid = false;
             fileInput.value = '';
             document.getElementById('file-preview-box').style.display = 'none';
             document.getElementById('dropzone-title').textContent = 'Upload Any Medical Image / Scan';
             document.getElementById('dropzone-sub').textContent = 'Drop any clinical image • AI automatically classifies modality and applies specialized XAI';
-            document.getElementById('dropzone-icon').className = 'fa-solid fa-cloud-arrow-up dropzone-icon';
+            const dropIcon = document.getElementById('dropzone-icon');
+            dropIcon.className = 'fa-solid fa-cloud-arrow-up dropzone-icon';
+            dropIcon.style.color = '';
             document.getElementById('detector-status-title').textContent = 'Autonomous AI Modality Detection Engine';
             ['brain', 'xray', 'bone', 'blood'].forEach(m => {
                 const tag = document.getElementById(`tag-${m}`);
@@ -1363,6 +1381,13 @@
             });
             document.getElementById('tag-brain').classList.add('active');
             currentModality = 'brain';
+
+            const xaiToolbar = document.querySelector('.xai-toolbar');
+            const slidersGrid = document.querySelector('.sliders-grid');
+            const morphCard = document.getElementById('morphometry-card');
+            if (xaiToolbar) xaiToolbar.style.display = 'grid';
+            if (slidersGrid) slidersGrid.style.display = 'grid';
+            if (morphCard) morphCard.style.display = 'flex';
         }
 
         async function loadDemoSample(sampleFile) {
@@ -1380,18 +1405,24 @@
             }
         }
 
-        // Autonomous Multi-Modal Anatomical Classifier & Integrity Screener
+        // Autonomous Multi-Modal Anatomical Classifier & Strict Medical Domain Screener
         function detectAndValidateScan(imgData, filename) {
             const data = imgData.data;
-            const totalPixels = data.length / 4;
             let totalLum = 0;
             let colorSaturationSum = 0;
             let highColorCount = 0;
+            let rgDiffSum = 0;
+            let gbDiffSum = 0;
+
+            // Optical microscope and chromatic stain counters
+            let brightBacklightCount = 0; // V > 150
+            let purpleGiemsaCount = 0;     // R > G*1.15 and B > G*1.05 with R,B > 50
+            let naturalSkinToneCount = 0;  // Skin tones (human portraits, selfies, casual photos)
             
             const W = 224, H = 224;
-            let topLum = 0, bottomLum = 0, centerLum = 0;
+            let topBorderLum = 0;
+            let botBorderLum = 0;
             let cornerDarkCount = 0;
-            let centralDenseCount = 0;
             let symmetryDiffSum = 0;
 
             for (let y = 0; y < H; y += 4) {
@@ -1405,19 +1436,34 @@
                     const minC = Math.min(r, g, b);
                     const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
                     colorSaturationSum += sat;
-                    if (sat > 0.25) highColorCount++;
+                    if (sat > 0.18) highColorCount++;
 
-                    if (y < H * 0.35) topLum += lum;
-                    if (y > H * 0.65) bottomLum += lum;
-                    if (x > W * 0.25 && x < W * 0.75 && y > H * 0.25 && y < H * 0.75) {
-                        centerLum += lum;
-                        if (lum > 50) centralDenseCount++;
+                    rgDiffSum += Math.abs(r - g);
+                    gbDiffSum += Math.abs(g - b);
+
+                    // Microscope backlight (condenser illumination)
+                    if (maxC > 150) brightBacklightCount++;
+
+                    // Giemsa/Wright stain (deep purple/magenta/violet)
+                    if (r > g * 1.15 && b > g * 1.05 && r > 50 && b > 50) {
+                        purpleGiemsaCount++;
                     }
 
+                    // Natural human skin tones / indoor portraits (R > G > B with distinct skin chromaticity)
+                    if (r > g && g > b && (r - g) > 12 && (g - b) > 6 && sat > 0.15) {
+                        naturalSkinToneCount++;
+                    }
+
+                    // Radiograph spatial borders
+                    if (y < 16) topBorderLum += lum;
+                    if (y > H - 16) botBorderLum += lum;
+
+                    // Brain MRI dark background corners
                     if ((x < 28 || x > W - 28) && (y < 28 || y > H - 28)) {
                         if (lum < 25) cornerDarkCount++;
                     }
 
+                    // Bilateral symmetry calculation across vertical axis
                     const mirX = W - 1 - x;
                     const mirIdx = (y * W + mirX) * 4;
                     const mirLum = 0.299 * data[mirIdx] + 0.587 * data[mirIdx+1] + 0.114 * data[mirIdx+2];
@@ -1428,10 +1474,15 @@
             const sampleCount = (H / 4) * (W / 4);
             const avgLum = totalLum / sampleCount;
             const avgSat = colorSaturationSum / sampleCount;
-            const highColorRatio = highColorCount / sampleCount;
+            const avgRgDiff = rgDiffSum / sampleCount;
+            const avgGbDiff = gbDiffSum / sampleCount;
+            const purpleRatio = purpleGiemsaCount / sampleCount;
+            const backlightRatio = brightBacklightCount / sampleCount;
+            const skinToneRatio = naturalSkinToneCount / sampleCount;
             const avgSymmetryDiff = symmetryDiffSum / sampleCount;
 
-            if (avgLum < 5 || avgLum > 248) {
+            // 1. Extreme blank / noise check
+            if (avgLum < 6 || avgLum > 246) {
                 return {
                     isValid: false,
                     modality: null,
@@ -1439,8 +1490,36 @@
                 };
             }
 
+            // 2. Strict Greyscale vs Color Detection
+            const isMonochrome = (avgRgDiff < 8.0 && avgGbDiff < 8.0 && avgSat < 0.10);
             const name = (filename || "").toLowerCase();
 
+            // 3. Strict Color Image Screening (Hematology Smear vs Non-Medical Photo)
+            if (!isMonochrome) {
+                const hasMicroscopeBacklight = backlightRatio >= 0.35;
+                const hasPurpleStain = purpleRatio >= 0.015;
+                const hasNaturalFacesOrSkin = skinToneRatio >= 0.05;
+                const nameSuggestsBlood = (name.includes('blood') || name.includes('cbc') || name.includes('smear') || name.includes('cell') || name.includes('neutrophil') || name.includes('eosinophil') || name.includes('lymphocyte'));
+
+                if ((hasMicroscopeBacklight && hasPurpleStain && !hasNaturalFacesOrSkin) || (nameSuggestsBlood && purpleRatio >= 0.008)) {
+                    return {
+                        isValid: true,
+                        modality: 'blood'
+                    };
+                } else {
+                    let reasonDetail = "Non-medical color photograph detected (portrait, casual selfie, indoor/outdoor scene, or non-clinical object).";
+                    if (hasNaturalFacesOrSkin) {
+                        reasonDetail = "Non-medical human portrait / casual photograph detected.";
+                    }
+                    return {
+                        isValid: false,
+                        modality: null,
+                        reason: `${reasonDetail} XAI-MedVision exclusively analyzes verified clinical radiographs (Chest X-Ray, Brain MRI, Bone Radiographs) or Giemsa-stained microscopic blood smears.`
+                    };
+                }
+            }
+
+            // 4. Greyscale Radiograph Classification (Brain MRI, Chest X-Ray, Bone Fracture)
             let detectedModality = null;
             if (name.includes('brain') || name.includes('mri') || name.includes('glioma') || name.includes('tumor') || name.includes('meningioma') || name.includes('pituitary')) {
                 detectedModality = 'brain';
@@ -1448,38 +1527,25 @@
                 detectedModality = 'xray';
             } else if (name.includes('bone') || name.includes('fracture') || name.includes('leg') || name.includes('arm') || name.includes('hand') || name.includes('knee')) {
                 detectedModality = 'bone';
-            } else if (name.includes('blood') || name.includes('cbc') || name.includes('smear') || name.includes('cell') || name.includes('neutrophil') || name.includes('eosinophil') || name.includes('lymphocyte')) {
-                detectedModality = 'blood';
             }
 
             if (!detectedModality) {
-                if (highColorRatio > 0.16 || avgSat > 0.16) {
-                    if (avgSat < 0.65) {
-                        detectedModality = 'blood';
-                    } else {
-                        return {
-                            isValid: false,
-                            modality: null,
-                            reason: "Non-medical color photograph detected. XAI-MedVision accepts clinical radiographs (Chest X-Ray, Brain MRI, Bone Fracture) or Giemsa-stained blood smears."
-                        };
-                    }
-                } else {
-                    if (cornerDarkCount > 30 && avgSymmetryDiff < 36 && centralDenseCount > 50) {
-                        detectedModality = 'brain';
-                    } else if (topLum < bottomLum * 1.35 && avgSymmetryDiff < 48) {
-                        detectedModality = 'xray';
-                    } else {
-                        detectedModality = 'bone';
-                    }
-                }
-            }
+                const borderSamples = (W / 4) * 4;
+                const avgTopBorder = topBorderLum / borderSamples;
+                const avgBotBorder = botBorderLum / borderSamples;
 
-            if (detectedModality !== 'blood' && avgSat > 0.40) {
-                return {
-                    isValid: false,
-                    modality: null,
-                    reason: "Excessive color saturation detected. Diagnostic radiographs (X-Ray & MRI) are monochrome greyscale images."
-                };
+                // Brain MRI: Oval head in black background (dark corners, dark borders, high symmetry)
+                if (cornerDarkCount >= 28 && avgTopBorder < 28 && avgBotBorder < 32 && avgSymmetryDiff < 38) {
+                    detectedModality = 'brain';
+                }
+                // Chest X-Ray: Bilateral radiolucent lung zones split by central mediastinum
+                else if (avgTopBorder < avgBotBorder * 1.35 && avgSymmetryDiff < 46) {
+                    detectedModality = 'xray';
+                }
+                // Bone Fracture: Longitudinal cortical bone shaft
+                else {
+                    detectedModality = 'bone';
+                }
             }
 
             return {
@@ -1813,7 +1879,7 @@
         }
 
         function recomputeAndRenderHeatmap() {
-            if (!cachedImgElement) return;
+            if (!cachedImgElement || isCurrentScanInvalid) return;
 
             const res = generateContinuousGradCAM(cachedImgElement, currentModality, currentXaiMethod, currentColormap, currentThreshold);
             document.getElementById('gradcam-img').src = `data:image/png;base64,${res.gradcamBase64}`;
@@ -1844,33 +1910,46 @@
             document.getElementById('badge-text').textContent = label.toUpperCase();
 
             const isInvalid = (riskLevel === 'INVALID');
+            isCurrentScanInvalid = isInvalid;
             const isPathological = (riskLevel === 'HIGH' || label.toUpperCase() === 'PNEUMONIA' || label.toLowerCase() === 'fractured' || (label.toLowerCase() !== 'notumor' && currentModality === 'brain' && !isInvalid));
             
             const diagBadge = document.getElementById('diag-badge');
             const badgeIcon = document.getElementById('badge-icon');
+            const xaiToolbar = document.querySelector('.xai-toolbar');
+            const slidersGrid = document.querySelector('.sliders-grid');
+            const morphCard = document.getElementById('morphometry-card');
 
             if (isInvalid) {
                 diagBadge.className = 'diag-badge pathological';
-                badgeIcon.className = 'fa-solid fa-triangle-exclamation';
+                badgeIcon.className = 'fa-solid fa-ban';
                 document.getElementById('confidence-val').textContent = `0.0%`;
                 document.getElementById('confidence-fill').style.width = `0%`;
-                document.getElementById('morphometry-card').style.display = 'none';
-            } else if (isPathological) {
-                diagBadge.className = 'diag-badge pathological';
-                badgeIcon.className = 'fa-solid fa-triangle-exclamation';
-                document.getElementById('confidence-val').textContent = `${confidence}%`;
-                document.getElementById('confidence-fill').style.width = `${confidence}%`;
-                document.getElementById('morphometry-card').style.display = 'flex';
+                if (morphCard) morphCard.style.display = 'none';
+                if (xaiToolbar) xaiToolbar.style.display = 'none';
+                if (slidersGrid) slidersGrid.style.display = 'none';
+                document.getElementById('gradcam-img').src = document.getElementById('original-img').src;
+                document.getElementById('layer-tag').textContent = "EXPLAINABILITY INHIBITED: Non-Medical Image";
             } else {
-                diagBadge.className = 'diag-badge normal';
-                badgeIcon.className = 'fa-solid fa-circle-check';
-                document.getElementById('confidence-val').textContent = `${confidence}%`;
-                document.getElementById('confidence-fill').style.width = `${confidence}%`;
-                document.getElementById('morphometry-card').style.display = 'flex';
+                if (xaiToolbar) xaiToolbar.style.display = 'grid';
+                if (slidersGrid) slidersGrid.style.display = 'grid';
+                if (morphCard) morphCard.style.display = 'flex';
+
+                if (isPathological) {
+                    diagBadge.className = 'diag-badge pathological';
+                    badgeIcon.className = 'fa-solid fa-triangle-exclamation';
+                    document.getElementById('confidence-val').textContent = `${confidence}%`;
+                    document.getElementById('confidence-fill').style.width = `${confidence}%`;
+                } else {
+                    diagBadge.className = 'diag-badge normal';
+                    badgeIcon.className = 'fa-solid fa-circle-check';
+                    document.getElementById('confidence-val').textContent = `${confidence}%`;
+                    document.getElementById('confidence-fill').style.width = `${confidence}%`;
+                }
+
+                document.getElementById('gradcam-img').src = payload.gradcam_base64 ? `data:image/png;base64,${payload.gradcam_base64}` : document.getElementById('original-img').src;
+                document.getElementById('layer-tag').textContent = payload.method;
             }
 
-            document.getElementById('gradcam-img').src = payload.gradcam_base64 ? `data:image/png;base64,${payload.gradcam_base64}` : document.getElementById('original-img').src;
-            document.getElementById('layer-tag').textContent = payload.method;
             document.getElementById('clinical-text').textContent = recommendation;
 
             const probSection = document.getElementById('prob-section');
@@ -1935,13 +2014,13 @@
             const scanAnalysis = detectAndValidateScan(imgData, selectedFile.name);
             if (!scanAnalysis.isValid) {
                 renderDiagnosticResults({
-                    modality: "Scan Quality Screening",
+                    modality: "Scan Domain Filter",
                     label: "CANNOT BE DIAGNOSED",
                     confidence: 0.0,
                     risk_level: "INVALID",
-                    recommendation: `Image Quality Rejection: ${scanAnalysis.reason} Please upload a verified clinical radiological scan (Chest X-Ray, Brain MRI, Bone Fracture Radiograph) or microscopic blood smear.`,
+                    recommendation: `Medical Domain Rejection: ${scanAnalysis.reason} Please upload a verified clinical radiological scan (Chest X-Ray, Brain MRI, Bone Fracture Radiograph) or microscopic blood smear.`,
                     gradcam_base64: null,
-                    method: "Quality Filter Reject",
+                    method: "EXPLAINABILITY INHIBITED: Non-Medical Image",
                     class_probabilities: null
                 });
                 return;

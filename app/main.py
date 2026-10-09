@@ -60,6 +60,25 @@ async def analyze_chest_xray(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
         
         result = predict_chest_xray(contents)
+        if not result.get("is_valid", True):
+            return JSONResponse(content={
+                "success": False,
+                "modality": "Scan Domain Filter",
+                "filename": file.filename,
+                "error": "CANNOT BE DIAGNOSED: Non-medical image detected.",
+                "prediction": {
+                    "label": "CANNOT BE DIAGNOSED",
+                    "confidence": 0.0,
+                    "confidence_raw": 0.0,
+                    "risk_level": "INVALID",
+                    "recommendation": result.get("reason", "Scan rejected by clinical domain screener.")
+                },
+                "xai": {
+                    "method": "Explainability Inhibited (Non-Medical Image)",
+                    "gradcam_base64": None
+                }
+            })
+
         label = result["label"]
         confidence = result["confidence"]
         
@@ -100,6 +119,25 @@ async def analyze_blood_cell(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
         
         result = predict_blood_cell(contents)
+        if not result.get("is_valid", True):
+            return JSONResponse(content={
+                "success": False,
+                "modality": "Scan Domain Filter",
+                "filename": file.filename,
+                "error": "CANNOT BE DIAGNOSED: Non-medical image detected.",
+                "prediction": {
+                    "label": "CANNOT BE DIAGNOSED",
+                    "confidence": 0.0,
+                    "confidence_raw": 0.0,
+                    "risk_level": "INVALID",
+                    "recommendation": result.get("reason", "Scan rejected by clinical domain screener.")
+                },
+                "xai": {
+                    "method": "Explainability Inhibited (Non-Medical Image)",
+                    "gradcam_base64": None
+                }
+            })
+
         label = result["label"]
         confidence = result["confidence"]
         
@@ -142,6 +180,25 @@ async def analyze_brain_mri(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
         
         result = predict_brain_mri(contents)
+        if not result.get("is_valid", True):
+            return JSONResponse(content={
+                "success": False,
+                "modality": "Scan Domain Filter",
+                "filename": file.filename,
+                "error": "CANNOT BE DIAGNOSED: Non-medical image detected.",
+                "prediction": {
+                    "label": "CANNOT BE DIAGNOSED",
+                    "confidence": 0.0,
+                    "confidence_raw": 0.0,
+                    "risk_level": "INVALID",
+                    "recommendation": result.get("reason", "Scan rejected by clinical domain screener.")
+                },
+                "xai": {
+                    "method": "Explainability Inhibited (Non-Medical Image)",
+                    "gradcam_base64": None
+                }
+            })
+
         label = result["label"]
         confidence = result["confidence"]
         
@@ -184,6 +241,25 @@ async def analyze_bone_fracture(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
         
         result = predict_bone_fracture(contents)
+        if not result.get("is_valid", True):
+            return JSONResponse(content={
+                "success": False,
+                "modality": "Scan Domain Filter",
+                "filename": file.filename,
+                "error": "CANNOT BE DIAGNOSED: Non-medical image detected.",
+                "prediction": {
+                    "label": "CANNOT BE DIAGNOSED",
+                    "confidence": 0.0,
+                    "confidence_raw": 0.0,
+                    "risk_level": "INVALID",
+                    "recommendation": result.get("reason", "Scan rejected by clinical domain screener.")
+                },
+                "xai": {
+                    "method": "Explainability Inhibited (Non-Medical Image)",
+                    "gradcam_base64": None
+                }
+            })
+
         label = result["label"]
         confidence = result["confidence"]
         

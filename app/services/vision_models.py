@@ -91,6 +91,35 @@ def compute_native_gradcam(model, target_layer, input_tensor, pred_idx):
 
     return cam
 
+def validate_scan_domain(pil_img_resized, modality):
+    """Clinical Domain Screener: Validates medical modality features and rejects non-medical photos."""
+    arr = np.array(pil_img_resized, dtype=np.float32)
+    sub = arr[::4, ::4, :]
+    r, g, b = sub[:,:,0], sub[:,:,1], sub[:,:,2]
+    maxC = np.maximum(np.maximum(r, g), b)
+    minC = np.minimum(np.minimum(r, g), b)
+    maxC_safe = np.maximum(maxC, 1e-5)
+    sat = np.where(maxC > 0, (maxC - minC) / maxC_safe, 0)
+    
+    avg_sat = float(np.mean(sat))
+    avg_rg = float(np.mean(np.abs(r - g)))
+    avg_gb = float(np.mean(np.abs(g - b)))
+    is_mono = (avg_rg < 8.0 and avg_gb < 8.0 and avg_sat < 0.10)
+    
+    backlight = float(np.mean(maxC > 150))
+    purple = float(np.mean((r > g * 1.15) & (b > g * 1.05) & (r > 50) & (b > 50)))
+    skin = float(np.mean((r > g) & (g > b) & ((r - g) > 12) & ((g - b) > 6) & (sat > 0.15)))
+    
+    if modality == 'blood':
+        if is_mono or skin >= 0.05 or purple < 0.012 or backlight < 0.30:
+            return False, "Non-hematology image detected. Blood cell smears require Giemsa cytochemical stain and illuminated microscope condenser backlight."
+        return True, ""
+    else:
+        # Radiographs (Chest X-Ray, Brain MRI, Bone Radiograph) MUST be monochrome
+        if not is_mono:
+            return False, "Non-radiological color photograph detected. Clinical radiographs (Chest X-Ray, Brain MRI, Bone Radiograph) are monochrome greyscale scans."
+        return True, ""
+
 # ----------------------------------------------------
 # 1. Chest X-Ray Pneumonia Model
 # ----------------------------------------------------
@@ -119,10 +148,21 @@ def get_chest_model(model_path="models_checkpoints/chest_xray_densenet.pth"):
     return _active_model, device
 
 def predict_chest_xray(image_bytes, model_path="models_checkpoints/chest_xray_densenet.pth"):
-    model, device = get_chest_model(model_path)
-
     pil_img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     pil_img_resized = pil_img.resize((224, 224))
+    
+    is_valid, reason = validate_scan_domain(pil_img_resized, 'xray')
+    if not is_valid:
+        return {
+            "label": "CANNOT BE DIAGNOSED",
+            "confidence": 0.0,
+            "class_probabilities": {},
+            "gradcam_base64": None,
+            "is_valid": False,
+            "reason": reason
+        }
+
+    model, device = get_chest_model(model_path)
     rgb_img = np.float32(pil_img_resized) / 255.0
 
     transform = transforms.Compose([
@@ -196,10 +236,21 @@ def get_blood_model(model_path="models_checkpoints/blood_cell_mobilenet.pth"):
     return _active_model, device
 
 def predict_blood_cell(image_bytes, model_path="models_checkpoints/blood_cell_mobilenet.pth"):
-    model, device = get_blood_model(model_path)
-
     pil_img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     pil_img_resized = pil_img.resize((224, 224))
+    
+    is_valid, reason = validate_scan_domain(pil_img_resized, 'blood')
+    if not is_valid:
+        return {
+            "label": "CANNOT BE DIAGNOSED",
+            "confidence": 0.0,
+            "class_probabilities": {},
+            "gradcam_base64": None,
+            "is_valid": False,
+            "reason": reason
+        }
+
+    model, device = get_blood_model(model_path)
     rgb_img = np.float32(pil_img_resized) / 255.0
 
     transform = transforms.Compose([
@@ -272,10 +323,21 @@ def get_brain_model(model_path="models_checkpoints/brain_mri_efficientnet.pth"):
     return _active_model, device
 
 def predict_brain_mri(image_bytes, model_path="models_checkpoints/brain_mri_efficientnet.pth"):
-    model, device = get_brain_model(model_path)
-
     pil_img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     pil_img_resized = pil_img.resize((224, 224))
+    
+    is_valid, reason = validate_scan_domain(pil_img_resized, 'brain')
+    if not is_valid:
+        return {
+            "label": "CANNOT BE DIAGNOSED",
+            "confidence": 0.0,
+            "class_probabilities": {},
+            "gradcam_base64": None,
+            "is_valid": False,
+            "reason": reason
+        }
+
+    model, device = get_brain_model(model_path)
     rgb_img = np.float32(pil_img_resized) / 255.0
 
     transform = transforms.Compose([
@@ -353,10 +415,21 @@ def get_bone_model(model_path="models_checkpoints/bone_fracture_resnet50.pth"):
     return _active_model, device
 
 def predict_bone_fracture(image_bytes, model_path="models_checkpoints/bone_fracture_resnet50.pth"):
-    model, device = get_bone_model(model_path)
-
     pil_img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     pil_img_resized = pil_img.resize((224, 224))
+    
+    is_valid, reason = validate_scan_domain(pil_img_resized, 'bone')
+    if not is_valid:
+        return {
+            "label": "CANNOT BE DIAGNOSED",
+            "confidence": 0.0,
+            "class_probabilities": {},
+            "gradcam_base64": None,
+            "is_valid": False,
+            "reason": reason
+        }
+
+    model, device = get_bone_model(model_path)
     rgb_img = np.float32(pil_img_resized) / 255.0
 
     transform = transforms.Compose([
