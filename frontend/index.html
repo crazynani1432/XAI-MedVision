@@ -1124,11 +1124,11 @@
                             }
                         }
 
-                        // Tumor score: High bilateral asymmetry + internal ring/heterogeneity contrast
-                        const asymmetry = Math.abs(lum - mirrorLum);
-                        const parenchymalScore = (asymmetry * 2.2) + (localContrast * 1.5);
+                        // Directional Asymmetry: Identify the pathological lesion side
+                        const asymmetry = (lum - mirrorLum);
+                        const parenchymalScore = (Math.max(0, asymmetry) * 3.0) + (localContrast * 2.0);
 
-                        if (parenchymalScore > bestScore && lum > 40) {
+                        if (parenchymalScore > bestScore && lum > 60) {
                             bestScore = parenchymalScore;
                             bestX = x;
                             bestY = y;
