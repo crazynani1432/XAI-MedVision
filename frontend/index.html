@@ -1103,34 +1103,59 @@
             let bestX = 112, bestY = 112, bestScore = -1;
 
             if (modality === 'brain') {
-                // Focus on internal high-contrast lesion mass (avoiding skull perimeter)
-                for (let y = 60; y < 165; y += 6) {
-                    for (let x = 60; x < 165; x += 6) {
-                        let localVar = 0;
-                        const centerIdx = (y * 224 + x) * 4;
-                        const centerLum = 0.299 * data[centerIdx] + 0.587 * data[centerIdx+1] + 0.114 * data[centerIdx+2];
+                // Bilateral Asymmetry & Intra-parenchymal Lesion Detection (Ignoring Skull Edge)
+                for (let y = 65; y < 160; y += 4) {
+                    for (let x = 65; x < 160; x += 4) {
+                        const idx = (y * 224 + x) * 4;
+                        const lum = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                        
+                        // Check mirror contralateral pixel across brain sagittal midline (x=112)
+                        const mirrorX = 224 - x;
+                        const mirrorIdx = (y * 224 + mirrorX) * 4;
+                        const mirrorLum = 0.299 * data[mirrorIdx] + 0.587 * data[mirrorIdx+1] + 0.114 * data[mirrorIdx+2];
 
-                        // Measure local texture gradient & lesion contrast
-                        for (let dy = -8; dy <= 8; dy += 4) {
-                            for (let dx = -8; dx <= 8; dx += 4) {
-                                const idx = ((y + dy) * 224 + (x + dx)) * 4;
-                                const lum = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                                localVar += Math.abs(lum - centerLum);
+                        // Measure local texture heterogeneity inside brain parenchyma
+                        let localContrast = 0;
+                        for (let dy = -6; dy <= 6; dy += 3) {
+                            for (let dx = -6; dx <= 6; dx += 3) {
+                                const nIdx = ((y + dy) * 224 + (x + dx)) * 4;
+                                const nLum = 0.299 * data[nIdx] + 0.587 * data[nIdx+1] + 0.114 * data[nIdx+2];
+                                localContrast += Math.abs(nLum - lum);
                             }
                         }
 
-                        // Weight left-center hemisphere where ring-enhancing lesions commonly appear
-                        const score = localVar + (centerLum > 60 && centerLum < 220 ? 80 : 0);
-                        if (score > bestScore) {
-                            bestScore = score;
+                        // Tumor score: High bilateral asymmetry + internal ring/heterogeneity contrast
+                        const asymmetry = Math.abs(lum - mirrorLum);
+                        const parenchymalScore = (asymmetry * 2.2) + (localContrast * 1.5);
+
+                        if (parenchymalScore > bestScore && lum > 40) {
+                            bestScore = parenchymalScore;
+                            bestX = x;
+                            bestY = y;
+                        }
+                    }
+                }
+            } else if (modality === 'bone') {
+                // Focus on skeletal cortical boundary discontinuity
+                for (let y = 50; y < 175; y += 4) {
+                    for (let x = 60; x < 165; x += 4) {
+                        const idx = (y * 224 + x) * 4;
+                        const lum = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                        let edgeMag = 0;
+                        for (let d = -4; d <= 4; d += 2) {
+                            const nIdx = ((y + d) * 224 + x) * 4;
+                            edgeMag += Math.abs((data[nIdx] || 0) - lum);
+                        }
+                        if (edgeMag > bestScore && lum > 60) {
+                            bestScore = edgeMag;
                             bestX = x;
                             bestY = y;
                         }
                     }
                 }
             } else {
-                for (let y = 40; y < 185; y += 6) {
-                    for (let x = 40; x < 185; x += 6) {
+                for (let y = 50; y < 175; y += 5) {
+                    for (let x = 45; x < 180; x += 5) {
                         const idx = (y * 224 + x) * 4;
                         const lum = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
                         if (lum > bestScore) {
@@ -1147,10 +1172,10 @@
             heatCanvas.width = 224;
             heatCanvas.height = 224;
 
-            const radius = modality === 'brain' ? 52 : 62;
-            const radGrad = heatCtx.createRadialGradient(bestX, bestY, 6, bestX, bestY, radius);
-            radGrad.addColorStop(0, 'rgba(255, 0, 0, 0.92)');
-            radGrad.addColorStop(0.32, 'rgba(255, 170, 0, 0.8)');
+            const radius = modality === 'brain' ? 44 : 56;
+            const radGrad = heatCtx.createRadialGradient(bestX, bestY, 4, bestX, bestY, radius);
+            radGrad.addColorStop(0, 'rgba(255, 0, 0, 0.95)');
+            radGrad.addColorStop(0.35, 'rgba(255, 175, 0, 0.82)');
             radGrad.addColorStop(0.65, 'rgba(0, 235, 255, 0.55)');
             radGrad.addColorStop(1, 'rgba(0, 0, 255, 0)');
 
